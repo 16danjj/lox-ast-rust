@@ -9,6 +9,8 @@ mod token;
 mod scanner;
 use scanner::*;
 
+mod parser;
+
 pub fn main(){
     let args: Vec<String> = args().collect();
     println!("args: {:?}", args);
