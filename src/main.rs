@@ -10,6 +10,7 @@ mod scanner;
 use scanner::*;
 
 mod parser;
+mod expr;
 
 pub fn main(){
     let args: Vec<String> = args().collect();
