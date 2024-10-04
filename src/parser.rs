@@ -117,7 +117,7 @@ impl Parser {
 
         if self.is_match(&[TokenType::LeftParen]) {
             let expr = self.expression()?;
-            self.consume(TokenType::RightParen, "Expect ')' after expression".to_string());
+            self.consume(TokenType::RightParen, "Expect ')' after expression".to_string())?;
             return Ok(Expr::Grouping(GroupingExpr{expression: Box::new(expr)}));
         }
 
@@ -129,8 +129,7 @@ impl Parser {
         if self.check(ttype) {
             Ok(self.advance().dup())
         } else {
-            let p = self.peek();
-            Err(Parser::error(p, message))
+            Err(Parser::error(self.peek(), message))
         }
     }
 
