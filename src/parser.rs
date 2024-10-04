@@ -23,13 +23,13 @@ impl Parser {
         let mut expr = self.comparison()?;
 
         while self.is_match(&[TokenType::BangEqual, TokenType::Equals]) {
-            let operator = self.previous();
+            let operator = self.previous().dup();
             let right = self.comparison()?;
-            expr = Ok(Expr::Binary(BinaryExpr {
+            expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
-            }));
+            });
         }
 
         Ok(expr)
@@ -39,14 +39,14 @@ impl Parser {
         let mut expr = self.term()?;
 
         while self.is_match(&[TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual]){
-            let operator = self.previous();
+            let operator = self.previous().dup();
             let right = self.term()?;
 
-            expr = Ok(Expr::Binary(BinaryExpr {
+            expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
-            }));
+            });
         }
 
         Ok(expr)
@@ -56,14 +56,14 @@ impl Parser {
         let mut expr = self.factor()?;
 
         while self.is_match(&[TokenType::Minus, TokenType::Plus]){
-            let operator = self.previous();
+            let operator = self.previous().dup();
             let right = self.factor()?;
 
-            expr = Ok(Expr::Binary(BinaryExpr {
+            expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
-            }));
+            });
         }
 
         Ok(expr)
@@ -73,14 +73,14 @@ impl Parser {
         let mut expr = self.unary()?;
 
         while self.is_match(&[TokenType::Slash, TokenType::Star]){
-            let operator = self.previous();
+            let operator = self.previous().dup();
             let right = self.unary()?;
 
-            expr = Ok(Expr::Binary(BinaryExpr {
+            expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right)
-            }));
+            });
         }
 
         Ok(expr)
@@ -88,7 +88,7 @@ impl Parser {
 
     fn unary(&mut self) -> Result<Expr, LoxError>{
         if self.is_match(&[TokenType::Bang, TokenType::Minus]){
-            let operator = self.previous();
+            let operator = self.previous().dup();
             let right = self.unary()?;
             return Ok(Expr::Unary(
                 UnaryExpr {operator, right: Box::new(right)}
@@ -112,7 +112,7 @@ impl Parser {
         }
 
         if self.is_match(&[TokenType::Number, TokenType::String]) {
-            return Ok(Expr::Literal(LiteralExpr {value: Some(self.previous().literal)}));
+            return Ok(Expr::Literal(LiteralExpr {value: self.previous().literal.clone()}));
         }
 
         if self.is_match(&[TokenType::LeftParen]) {
@@ -127,15 +127,37 @@ impl Parser {
 
     fn consume(&mut self, ttype: TokenType, message: String) -> Result<Token, LoxError> {
         if self.check(ttype) {
-            Ok(self.advance())
+            Ok(self.advance().dup())
         } else {
             let p = self.peek();
-            Err(LoxError::error(p.line, message))
+            Err(Parser::error(p, message))
+        }
+    }
+
+    fn error(token: &Token, message: String) -> LoxError {
+        LoxError::parse_error(token, message)
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().is(TokenType::SemiColon) {
+                return;
+            }
+            
+            if matches!(self.peek().token_type(),
+            TokenType::Class | TokenType::Fun | TokenType::Var | TokenType::For | TokenType::If |
+            TokenType::While | TokenType::Print | TokenType::Return){
+                return;
+            }
+
+            self.advance();
         }
     }
 
     fn is_match(&mut self, types: &[TokenType]) -> bool{
-         for t in &types {
+         for &t in types {
             if self.check(t) {
                 self.advance();
                 return true;
@@ -148,28 +170,28 @@ impl Parser {
         if self.is_at_end(){
             false
         } else {
-            self.peek().ttype == ttype
+            self.peek().is(ttype)
         }
     }
 
-    fn advance(&mut self) -> Token {
+    fn advance(&mut self) -> &Token {
         if !self.is_at_end() {
             self.current +=1 ;
         }
 
-        self.previous();
+        self.previous()
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek() == TokenType::Eof
+        self.peek().is(TokenType::Eof)
     }
 
-    fn peek(&self) -> Token {
-        self.tokens.get(self.current)
+    fn peek(&self) -> &Token {
+        self.tokens.get(self.current).unwrap()
     }
 
-    fn previous(&self) -> Token {
-        self.tokens.get(self.current - 1)
+    fn previous(&self) -> &Token {
+        self.tokens.get(self.current - 1).unwrap()
     }
 
-}
+} 
