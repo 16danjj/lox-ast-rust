@@ -4,6 +4,7 @@ use crate::token_type::*;
 use crate::token::*;
 use crate::LoxError;
 use crate::expr::*;
+use crate::object::*;
 
 pub struct Parser<'a> {
     tokens: &'a Vec<Token>,

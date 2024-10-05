@@ -2,6 +2,7 @@
 use crate::token_type::*;
 use crate::token::*;
 use crate::error::*;
+use crate::object::*;
 
 pub struct Scanner {
     source: Vec<char>,
