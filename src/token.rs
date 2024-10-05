@@ -25,8 +25,8 @@
   
   #[derive(Debug, PartialEq)]
   pub struct Token {
-    pub ttype: TokenType,
-    pub lexeme: String,
+    ttype: TokenType,
+    lexeme: String,
     pub literal: Option<Object>,
     pub line: usize
   }
