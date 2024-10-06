@@ -28,13 +28,7 @@ impl ExprVisitor<Object> for Interpreter{
                     _ => {return Ok(Object::Nil)}
                 }
             },
-            TokenType::Bang => {
-                if self.is_truthy(&right) {
-                    Ok(Object::False)
-                } else {
-                    Ok(Object::True)
-                }
-            },
+            TokenType::Bang => Ok(Object::Bool(!self.is_truthy(&right))),
             _ =>  Err(LoxError::error(0, "Unreachable"))
 
         }
@@ -48,5 +42,5 @@ impl Interpreter{
 
     // anything that is not Nil or False is true
     fn is_truthy(&self, object:&Object) -> bool {
-        !matches!(object, Object::False | Object::Nil) }
+        !matches!(object, Object::Bool(false) | Object::Nil) }
 }
