@@ -35,7 +35,7 @@ impl ExprVisitor<Object> for Interpreter{
                     Ok(Object::True)
                 }
             },
-            _ =>  Err(LoxError::error(0, "Unreachable".to_string()))
+            _ =>  Err(LoxError::error(0, "Unreachable"))
 
         }
     }
