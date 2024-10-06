@@ -1,8 +1,6 @@
 use crate::expr::*;
-use crate::object;
 use crate::object::*;
 use crate::error::*;
-use crate::token::Token;
 use crate::token_type::*;
 
 pub struct Interpreter {}
@@ -29,7 +27,7 @@ impl ExprVisitor<Object> for Interpreter{
                 }
             },
             TokenType::Bang => Ok(Object::Bool(!self.is_truthy(&right))),
-            _ =>  Err(LoxError::error(0, "Unreachable"))
+            _ =>  Err(LoxError::error(expr.operator.line, "Unreachable"))
 
         }
     }
@@ -43,4 +41,42 @@ impl Interpreter{
     // anything that is not Nil or False is true
     fn is_truthy(&self, object:&Object) -> bool {
         !matches!(object, Object::Bool(false) | Object::Nil) }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::*;
+
+    #[test]
+    fn test_unary_minus() {
+        let terp = Interpreter {};
+        let unary_expr = Expr::Unary(UnaryExpr{
+            operator: Token::new(TokenType::Minus, "-".to_string(), None, 0),
+            right: Box::new(Expr::Literal(LiteralExpr{
+                value: Some(Object::Num(123.0))
+            }))
+        });
+
+        let result = terp.evaluate(&unary_expr);
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::Num(-123.0)));
+    }
+
+    #[test]
+    fn test_unary_not() {
+        let terp = Interpreter {};
+        let unary_expr = Expr::Unary(UnaryExpr{
+            operator: Token::new(TokenType::Bang, "!".to_string(), None, 0),
+            right: Box::new(Expr::Literal(LiteralExpr{
+                value: Some(Object::Bool(false))
+            }))
+        });
+
+        let result = terp.evaluate(&unary_expr);
+        assert!(result.is_ok());
+        assert_eq!(result.ok(), Some(Object::Bool(true)));
+    }
 }
