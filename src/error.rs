@@ -19,6 +19,12 @@ impl LoxError {
         err.report("");
         err
     }
+
+    pub fn runtime_error(token: &Token, message: &str) -> LoxError {
+        let err = LoxError{token: Some(token.dup()), line: token.line, message: message.to_string()};
+        err.report("");
+        err
+    }
     
     pub fn report(&self, loc: &str) {
         if let Some(token) = &self.token {
