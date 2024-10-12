@@ -29,12 +29,21 @@ impl ExprVisitor<Object> for Interpreter {
                 TokenType::Equals => Object::Bool(left == right),
                 _ => Object::ArithmeticError,
             },
+            (Object::Str(left), Object::Num(right)) => match op {
+                TokenType::Plus => Object::Str(format!("{left}{right}")),
+                _ => Object::ArithmeticError,
+            },
+            (Object::Num(left), Object::Str(right)) => match op {
+                TokenType::Plus => Object::Str(format!("{left}{right}")),
+                _ => Object::ArithmeticError,
+            },
             (Object::Str(left), Object::Str(right)) => match op {
                 TokenType::Plus => Object::Str(format!("{left}{right}")),
                 TokenType::BangEqual => Object::Bool(left != right),
                 TokenType::Equals => Object::Bool(left == right),
                 _ => Object::ArithmeticError,
             },
+
             (Object::Bool(left), Object::Bool(right)) => match op {
                 TokenType::BangEqual => Object::Bool(left != right),
                 TokenType::Equals => Object::Bool(left == right),
