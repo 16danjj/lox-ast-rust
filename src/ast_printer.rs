@@ -1,10 +1,9 @@
-
-use crate::expr::*;
 use crate::error::*;
+use crate::expr::*;
 
 pub struct AstPrinter;
 
-impl AstPrinter{
+impl AstPrinter {
     pub fn print(&self, expr: &Expr) -> Result<String, LoxError> {
         expr.accept(self)
     }
@@ -17,12 +16,12 @@ impl AstPrinter{
         }
 
         builder = format!("{builder})");
-        
+
         Ok(builder)
     }
 }
 
-impl ExprVisitor<String> for AstPrinter{
+impl ExprVisitor<String> for AstPrinter {
     fn visit_binary_expr(&self, expr: &BinaryExpr) -> Result<String, LoxError> {
         self.parenthesize(&expr.operator.as_string(), &[&expr.left, &expr.right])
     }
@@ -33,19 +32,18 @@ impl ExprVisitor<String> for AstPrinter{
 
     fn visit_literal_expr(&self, expr: &LiteralExpr) -> Result<String, LoxError> {
         if let Some(value) = &expr.value {
-           Ok(value.to_string())
+            Ok(value.to_string())
         } else {
             Ok("nil".to_string())
         }
     }
- 
+
     fn visit_unary_expr(&self, expr: &UnaryExpr) -> Result<String, LoxError> {
         self.parenthesize(&expr.operator.as_string(), &[&expr.right])
     }
 }
 
-
-/* 
+/*
 
 fn main() {
      let expression = Expr::Binary(
@@ -74,7 +72,7 @@ fn main() {
                     expression: Box::new(Expr::Literal(
                         LiteralExpr{value: Some(Object::Num(45.67)) }
                     ))
-                } 
+                }
             ))
         }
      );
