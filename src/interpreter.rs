@@ -18,6 +18,10 @@ impl StmtVisitor<()> for Interpreter {
         println!("{value}");
         Ok(())
     }
+
+    fn visit_var_stmt(&self, expr: &VarStmt) -> Result<(), LoxError> {
+        Ok(())
+    }
 }
 
 impl ExprVisitor<Object> for Interpreter {
@@ -100,6 +104,10 @@ impl ExprVisitor<Object> for Interpreter {
             TokenType::Bang => Ok(Object::Bool(!self.is_truthy(&right))),
             _ => Err(LoxError::error(expr.operator.line, "Unreachable")),
         }
+    }
+
+    fn visit_variable_expr(&self, expr: &VariableExpr) -> Result<Object, LoxError> {
+        Ok(Object::Nil)
     }
 }
 

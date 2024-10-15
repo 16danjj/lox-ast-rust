@@ -17,7 +17,7 @@ use parser::*;
 mod expr;
 mod stmt;
 
-mod ast_printer;
+//mod ast_printer;
 //use ast_printer::*;
 
 mod interpreter;
