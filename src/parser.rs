@@ -6,12 +6,12 @@ use crate::token_type::*;
 use crate::LoxError;
 
 pub struct Parser<'a> {
-    tokens: &'a Vec<Token>,
+    tokens: &'a [Token],
     current: usize,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &Vec<Token>) -> Parser {
+    pub fn new(tokens: &[Token]) -> Parser {
         Parser { tokens, current: 0 }
     }
 
@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
             }));
         }
 
-        Ok(self.primary()?)
+        self.primary()
     }
 
     fn primary(&mut self) -> Result<Expr, LoxError> {

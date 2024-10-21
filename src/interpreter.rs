@@ -91,15 +91,15 @@ impl ExprVisitor<Object> for Interpreter {
         }
     }
     fn visit_grouping_expr(&self, expr: &GroupingExpr) -> Result<Object, LoxError> {
-        Ok(self.evaluate(&expr.expression)?)
+        self.evaluate(&expr.expression)
     }
     fn visit_unary_expr(&self, expr: &UnaryExpr) -> Result<Object, LoxError> {
         let right = self.evaluate(&expr.right)?;
 
         match expr.operator.token_type() {
             TokenType::Minus => match right {
-                Object::Num(n) => return Ok(Object::Num(-n)),
-                _ => return Ok(Object::Nil),
+                Object::Num(n) => Ok(Object::Num(-n)),
+                _ => Ok(Object::Nil),
             },
             TokenType::Bang => Ok(Object::Bool(!self.is_truthy(&right))),
             _ => Err(LoxError::error(expr.operator.line, "Unreachable")),
