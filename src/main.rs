@@ -17,6 +17,8 @@ use parser::*;
 mod expr;
 mod stmt;
 
+mod environment;
+
 //mod ast_printer;
 //use ast_printer::*;
 
@@ -46,7 +48,7 @@ struct Lox {
 impl Lox {
     pub fn new() -> Lox {
         Lox {
-            interpreter: Interpreter {},
+            interpreter: Interpreter::new(),
         }
     }
     pub fn run_file(&self, path: &str) -> io::Result<()> {
