@@ -1,8 +1,4 @@
-use crate::{
-    object::*,
-    token::Token,
-    LoxError,
-};
+use crate::{object::*, token::Token, LoxError};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
