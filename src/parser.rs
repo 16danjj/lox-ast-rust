@@ -8,12 +8,16 @@ use crate::LoxError;
 pub struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
-    had_error: bool
+    had_error: bool,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: &[Token]) -> Parser {
-        Parser { tokens, current: 0, had_error: false }
+        Parser {
+            tokens,
+            current: 0,
+            had_error: false,
+        }
     }
 
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
@@ -31,7 +35,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Result<Expr, LoxError> {
-        self.equality()
+        self.assignment()
     }
 
     fn declaration(&mut self) -> Result<Stmt, LoxError> {
@@ -80,6 +84,26 @@ impl<'a> Parser<'a> {
         let expr = self.expression()?;
         self.consume(TokenType::SemiColon, "Expect ';' after value.")?;
         Ok(Stmt::Expression(ExpressionStmt { expression: expr }))
+    }
+
+    fn assignment(&mut self) -> Result<Expr, LoxError> {
+        let expr = self.equality()?;
+
+        if self.is_match(&[TokenType::Assign]) {
+            let equals = self.previous().dup();
+            let value = self.assignment()?;
+
+            if let Expr::Variable(expr) = expr {
+                return Ok(Expr::Assign(AssignExpr {
+                    name: expr.name.dup(),
+                    value: Box::new(value),
+                }));
+            } else {
+                self.error(&equals, "Invalid assignment target.");
+            }
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, LoxError> {

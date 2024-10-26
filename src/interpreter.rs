@@ -1,14 +1,13 @@
-use std::cell::RefCell;
 use crate::environment::Environment;
 use crate::error::*;
 use crate::expr::*;
 use crate::object::*;
-use crate::stmt;
 use crate::stmt::*;
 use crate::token_type::*;
+use std::cell::RefCell;
 
 pub struct Interpreter {
-    environment: RefCell<Environment>
+    environment: RefCell<Environment>,
 }
 
 impl StmtVisitor<()> for Interpreter {
@@ -25,17 +24,27 @@ impl StmtVisitor<()> for Interpreter {
 
     fn visit_var_stmt(&self, stmt: &VarStmt) -> Result<(), LoxError> {
         let value = if let Some(initializer) = &stmt.initializer {
-            self.evaluate(&initializer)?
+            self.evaluate(initializer)?
         } else {
             Object::Nil
         };
 
-        self.environment.borrow_mut().define(stmt.name.as_string(), value);
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.as_string(), value);
         Ok(())
     }
 }
 
 impl ExprVisitor<Object> for Interpreter {
+    fn visit_assign_expr(&self, expr: &AssignExpr) -> Result<Object, LoxError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment
+            .borrow_mut()
+            .assign(&expr.name, value.clone())?;
+        Ok(value)
+    }
+
     fn visit_literal_expr(&self, expr: &LiteralExpr) -> Result<Object, LoxError> {
         Ok(expr.value.clone().unwrap())
     }
@@ -123,7 +132,7 @@ impl ExprVisitor<Object> for Interpreter {
 }
 
 impl Interpreter {
-    pub fn new() -> Interpreter{
+    pub fn new() -> Interpreter {
         Interpreter {
             environment: RefCell::new(Environment::new()),
         }
@@ -131,7 +140,7 @@ impl Interpreter {
     fn evaluate(&self, expr: &Expr) -> Result<Object, LoxError> {
         expr.accept(self)
     }
- 
+
     fn execute(&self, stmt: &Stmt) -> Result<(), LoxError> {
         stmt.accept(self)
     }
@@ -405,23 +414,26 @@ mod tests {
     #[test]
     fn test_var_stmt_defined() {
         let terp = Interpreter::new();
-        let name = Token::new(TokenType:: Identifier, "foo".to_string(), None, 123);
+        let name = Token::new(TokenType::Identifier, "foo".to_string(), None, 123);
         let var_stmt = VarStmt {
             name: name.dup(),
-            initializer: Some(*make_literal(Object::Num(23.0)))
+            initializer: Some(*make_literal(Object::Num(23.0))),
         };
 
         assert!(terp.visit_var_stmt(&var_stmt).is_ok());
-        assert_eq!(terp.environment.borrow().get(&name).unwrap(), Object::Num(23.0));
+        assert_eq!(
+            terp.environment.borrow().get(&name).unwrap(),
+            Object::Num(23.0)
+        );
     }
 
     #[test]
     fn test_var_stmt_undefined() {
         let terp = Interpreter::new();
-        let name = Token::new(TokenType:: Identifier, "foo".to_string(), None, 123);
+        let name = Token::new(TokenType::Identifier, "foo".to_string(), None, 123);
         let var_stmt = VarStmt {
             name: name.dup(),
-            initializer: None
+            initializer: None,
         };
 
         assert!(terp.visit_var_stmt(&var_stmt).is_ok());
@@ -431,23 +443,26 @@ mod tests {
     #[test]
     fn test_var_expr() {
         let terp = Interpreter::new();
-        let name = Token::new(TokenType:: Identifier, "foo".to_string(), None, 123);
+        let name = Token::new(TokenType::Identifier, "foo".to_string(), None, 123);
         let var_stmt = VarStmt {
             name: name.dup(),
-            initializer: Some(*make_literal(Object::Num(23.0)))
+            initializer: Some(*make_literal(Object::Num(23.0))),
         };
 
         assert!(terp.visit_var_stmt(&var_stmt).is_ok());
-        let var_expr = VariableExpr{name: name.dup()};
-        assert_eq!(terp.visit_variable_expr(&var_expr).unwrap(), Object::Num(23.0));
+        let var_expr = VariableExpr { name: name.dup() };
+        assert_eq!(
+            terp.visit_variable_expr(&var_expr).unwrap(),
+            Object::Num(23.0)
+        );
     }
 
     #[test]
     fn test_var_undefined_variable_expr() {
         let terp = Interpreter::new();
-        let name = Token::new(TokenType:: Identifier, "foo".to_string(), None, 123);
-        
-        let var_expr = VariableExpr{name: name.dup()};
+        let name = Token::new(TokenType::Identifier, "foo".to_string(), None, 123);
+
+        let var_expr = VariableExpr { name: name.dup() };
         assert!(terp.visit_variable_expr(&var_expr).is_err());
     }
 }
