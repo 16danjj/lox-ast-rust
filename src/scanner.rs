@@ -89,7 +89,7 @@ impl Scanner {
                 let tok = if self.is_match('=') {
                     TokenType::GreaterEqual
                 } else {
-                    TokenType::Less
+                    TokenType::Greater
                 };
                 self.add_token(tok);
             }
