@@ -3,6 +3,7 @@ use crate::object::*;
 use crate::stmt::*;
 use crate::token::*;
 use crate::token_type::*;
+use crate::Lox;
 use crate::LoxError;
 
 pub struct Parser<'a> {
@@ -125,7 +126,7 @@ impl<'a> Parser<'a> {
     }
 
     fn assignment(&mut self) -> Result<Expr, LoxError> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.is_match(&[TokenType::Assign]) {
             let equals = self.previous().dup();
@@ -139,6 +140,38 @@ impl<'a> Parser<'a> {
             } else {
                 self.error(&equals, "Invalid assignment target.");
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.and()?;
+
+        while self.is_match(&[TokenType::Or]) {
+            let operator = self.previous().dup();
+            let right = Box::new(self.and()?);
+            expr = Expr::Logical(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right,
+            })
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.equality()?;
+
+        while self.is_match(&[TokenType::And]) {
+            let operator = self.previous().dup();
+            let right = Box::new(self.equality()?);
+            expr = Expr::Logical(LogicalExpr {
+                left: Box::new(expr),
+                operator,
+                right,
+            });
         }
 
         Ok(expr)
