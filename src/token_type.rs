@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
+    Break,
     LeftParen,
     RightParen,
     LeftBrace,

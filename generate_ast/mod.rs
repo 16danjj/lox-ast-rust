@@ -30,6 +30,7 @@ pub fn generate_ast(output_dir: &str) -> io::Result<()> {
         &["error", "expr", "token"],
         &[
             "Block : Vec<Stmt> statements",
+            "Break : Token token",
             "Expression : Expr expression",
             "If : Expr condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch",
             "Print : Expr expression",
@@ -78,7 +79,7 @@ fn define_ast(
     writeln!(file, "}}\n")?;
 
     writeln!(file, "impl {} {{", base_name)?;
-    writeln!(file, "    pub fn accept<T>(&self, {}_visitor: &dyn {base_name}Visitor<T>) -> Result<T, LoxError> {{", base_name.to_lowercase())?;
+    writeln!(file, "    pub fn accept<T>(&self, {}_visitor: &dyn {base_name}Visitor<T>) -> Result<T, LoxResult> {{", base_name.to_lowercase())?;
     writeln!(file, "        match self {{")?;
 
     for t in &tree_types {
@@ -106,7 +107,7 @@ fn define_ast(
     for t in &tree_types {
         writeln!(
             file,
-            "    fn visit_{}_{}(&self, expr: &{}) -> Result<T, LoxError>;",
+            "    fn visit_{}_{}(&self, expr: &{}) -> Result<T, LoxResult>;",
             t.base_class_name.to_lowercase(),
             base_name.to_lowercase(),
             t.class_name
@@ -118,7 +119,7 @@ fn define_ast(
         writeln!(file, "impl {} {{", t.class_name)?;
         writeln!(
             file,
-            "    pub fn accept<T>(&self, visitor: &dyn {}Visitor<T>) -> Result<T, LoxError> {{",
+            "    pub fn accept<T>(&self, visitor: &dyn {}Visitor<T>) -> Result<T, LoxResult> {{",
             base_name
         )?;
         writeln!(

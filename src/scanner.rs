@@ -22,15 +22,14 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Result<&Vec<Token>, LoxError> {
-        let mut had_error: Option<LoxError> = None;
+    pub fn scan_tokens(&mut self) -> Result<&Vec<Token>, LoxResult> {
+        let mut had_error: Option<LoxResult> = None;
 
         while !self.is_at_end() {
             self.start = self.current;
             match self.scan_token() {
                 Ok(_) => {}
                 Err(e) => {
-                    e.report("");
                     had_error = Some(e);
                 }
             }
@@ -48,7 +47,7 @@ impl Scanner {
         self.current >= self.source.len()
     }
 
-    fn scan_token(&mut self) -> Result<(), LoxError> {
+    fn scan_token(&mut self) -> Result<(), LoxResult> {
         let c = self.advance();
         match c {
             '(' => self.add_token(TokenType::LeftParen),
@@ -123,13 +122,13 @@ impl Scanner {
             _ if c.is_ascii_alphabetic() || c == '_' => {
                 self.identifier();
             }
-            _ => return Err(LoxError::error(self.line, "Unexpected character")),
+            _ => return Err(LoxResult::error(self.line, "Unexpected character")),
         }
 
         Ok(())
     }
 
-    fn scan_comment(&mut self) -> Result<(), LoxError> {
+    fn scan_comment(&mut self) -> Result<(), LoxResult> {
         loop {
             match self.peek() {
                 Some('*') => {
@@ -149,7 +148,7 @@ impl Scanner {
                     self.line += 1;
                 }
                 None => {
-                    return Err(LoxError::error(self.line, "Unterminated comment"));
+                    return Err(LoxResult::error(self.line, "Unterminated comment"));
                 }
                 _ => {
                     self.advance();
@@ -205,7 +204,7 @@ impl Scanner {
         }
     }
 
-    fn string(&mut self) -> Result<(), LoxError> {
+    fn string(&mut self) -> Result<(), LoxResult> {
         while let Some(ch) = self.peek() {
             match ch {
                 '"' => {
@@ -220,7 +219,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(LoxError::error(self.line, "Unterminated string."));
+            return Err(LoxResult::error(self.line, "Unterminated string."));
         }
 
         self.advance();
@@ -286,6 +285,7 @@ impl Scanner {
             "true" => Some(TokenType::True),
             "var" => Some(TokenType::Var),
             "while" => Some(TokenType::While),
+            "break" => Some(TokenType::Break),
             _ => None,
         }
     }
