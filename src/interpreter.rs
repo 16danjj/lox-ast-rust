@@ -4,8 +4,10 @@ use crate::expr::*;
 use crate::object::*;
 use crate::stmt::*;
 use crate::token_type::*;
+use crate::callable::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+
 
 pub struct Interpreter {
     environment: RefCell<Rc<RefCell<Environment>>>,
@@ -86,7 +88,11 @@ impl ExprVisitor<Object> for Interpreter {
         } 
 
         if let Object::Func(function) = callee {
-            function.call(self, arguments)
+            if arguments.len() != function.func.arity() {
+                return Err(LoxResult::runtime_error(&expr.paren, &format!("Expected {} arguments but got {}.", 
+                                                                                        function.func.arity(), arguments.len())));
+            }
+            function.func.call(self, arguments) // Check !
         } else {
             Err(LoxResult::runtime_error(&expr.paren, "Can only call functions and classes"))
         }

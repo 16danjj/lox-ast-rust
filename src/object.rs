@@ -1,7 +1,6 @@
 use std::cmp::*;
 use std::fmt;
-use crate::interpreter::*;
-use crate::LoxResult;
+use crate::callable::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -32,13 +31,6 @@ impl fmt::Display for Object {
     }
 }
 
-//------
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Callable;
 
-impl  Callable {
-    pub fn call(&self, terp: &Interpreter, arguments: Vec<Object>) -> Result<Object, LoxResult>{
-        Ok(Object::Nil)
-    }
-}
+

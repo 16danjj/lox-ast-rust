@@ -18,6 +18,7 @@ mod expr;
 mod stmt;
 
 mod environment;
+mod callable;
 
 //mod ast_printer;
 //use ast_printer::*;
