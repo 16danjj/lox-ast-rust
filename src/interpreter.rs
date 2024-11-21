@@ -1,15 +1,16 @@
+use crate::callable::*;
 use crate::environment::Environment;
 use crate::error::*;
 use crate::expr::*;
+use crate::native_functions::*;
 use crate::object::*;
 use crate::stmt::*;
 use crate::token_type::*;
-use crate::callable::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-
 pub struct Interpreter {
+    globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
     nest: RefCell<usize>,
 }
@@ -85,18 +86,26 @@ impl ExprVisitor<Object> for Interpreter {
         let mut arguments = Vec::new();
         for argument in &expr.arguments {
             arguments.push(self.evaluate(argument)?);
-        } 
+        }
 
         if let Object::Func(function) = callee {
             if arguments.len() != function.func.arity() {
-                return Err(LoxResult::runtime_error(&expr.paren, &format!("Expected {} arguments but got {}.", 
-                                                                                        function.func.arity(), arguments.len())));
+                return Err(LoxResult::runtime_error(
+                    &expr.paren,
+                    &format!(
+                        "Expected {} arguments but got {}.",
+                        function.func.arity(),
+                        arguments.len()
+                    ),
+                ));
             }
             function.func.call(self, arguments) // Check !
         } else {
-            Err(LoxResult::runtime_error(&expr.paren, "Can only call functions and classes"))
+            Err(LoxResult::runtime_error(
+                &expr.paren,
+                "Can only call functions and classes",
+            ))
         }
-
     }
     fn visit_logical_expr(&self, expr: &LogicalExpr) -> Result<Object, LoxResult> {
         let left = self.evaluate(&expr.left)?;
@@ -210,8 +219,18 @@ impl ExprVisitor<Object> for Interpreter {
 
 impl Interpreter {
     pub fn new() -> Interpreter {
+        let globals = Rc::new(RefCell::new(Environment::new()));
+        globals.borrow_mut().define(
+            "clock",
+            Object::Func(Callable {
+                func: Rc::new(NativeClock {}),
+                arity: 0,
+            }),
+        );
+
         Interpreter {
-            environment: RefCell::new(Rc::new(RefCell::new(Environment::new()))),
+            globals: Rc::clone(&globals),
+            environment: RefCell::new(Rc::clone(&globals)),
             nest: RefCell::new(0),
         }
     }

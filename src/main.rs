@@ -17,8 +17,9 @@ use parser::*;
 mod expr;
 mod stmt;
 
-mod environment;
 mod callable;
+mod environment;
+mod native_functions;
 
 //mod ast_printer;
 //use ast_printer::*;

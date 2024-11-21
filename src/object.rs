@@ -1,6 +1,6 @@
+use crate::callable::*;
 use std::cmp::*;
 use std::fmt;
-use crate::callable::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -23,14 +23,10 @@ impl fmt::Display for Object {
                 } else {
                     write!(f, "false")
                 }
-            },
+            }
             Object::Func(_) => write!(f, "<func>"),
             Object::Nil => write!(f, "nil"),
             Object::ArithmeticError => panic!("Should not be trying to print this"),
         }
     }
 }
-
-
-
-

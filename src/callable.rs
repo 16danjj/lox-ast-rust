@@ -1,15 +1,14 @@
 use crate::interpreter::*;
-use crate::LoxResult;
 use crate::object::*;
+use crate::LoxResult;
 use std::fmt::{self, Debug};
-
 
 use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct Callable {
     pub func: Rc<dyn LoxCallable>,
-    arity: usize
+    pub arity: usize,
 }
 
 impl Debug for Callable {
@@ -18,7 +17,7 @@ impl Debug for Callable {
     }
 }
 
-impl PartialEq for Callable{
+impl PartialEq for Callable {
     fn eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.func, &other.func)
     }
@@ -35,7 +34,6 @@ impl LoxCallable for Callable {
     }
 
     fn arity(&self) -> usize {
-         self.arity
+        self.arity
     }
 }
-
