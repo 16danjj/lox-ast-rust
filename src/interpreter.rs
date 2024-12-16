@@ -223,8 +223,7 @@ impl Interpreter {
         globals.borrow_mut().define(
             "clock",
             Object::Func(Callable {
-                func: Rc::new(NativeClock {}),
-                arity: 0,
+                func: Rc::new(NativeClock {})
             }),
         );
 
