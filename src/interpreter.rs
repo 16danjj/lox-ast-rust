@@ -16,6 +16,9 @@ pub struct Interpreter {
 }
 
 impl StmtVisitor<()> for Interpreter {
+    fn visit_function_stmt(&self, stmt: &FunctionStmt) -> Result<(), LoxResult> {
+        Ok(())
+    }
     fn visit_break_stmt(&self, stmt: &BreakStmt) -> Result<(), LoxResult> {
         if *self.nest.borrow() == 0 {
             Err(LoxResult::runtime_error(
@@ -223,7 +226,7 @@ impl Interpreter {
         globals.borrow_mut().define(
             "clock",
             Object::Func(Callable {
-                func: Rc::new(NativeClock {})
+                func: Rc::new(NativeClock {}),
             }),
         );
 

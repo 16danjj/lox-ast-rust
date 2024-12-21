@@ -14,7 +14,9 @@ impl LoxCallable for NativeClock {
     ) -> Result<Object, LoxResult> {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => return Ok(Object::Num(n.as_millis() as f64)),
-            Err(e) => Err(LoxResult::SystemError { message: format!("Clock returned invalid duration : {:?}", e.duration() )  })
+            Err(e) => Err(LoxResult::SystemError {
+                message: format!("Clock returned invalid duration : {:?}", e.duration()),
+            }),
         }
     }
 
