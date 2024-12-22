@@ -20,6 +20,7 @@ mod stmt;
 mod callable;
 mod environment;
 mod native_functions;
+mod lox_function;
 
 //mod ast_printer;
 //use ast_printer::*;
