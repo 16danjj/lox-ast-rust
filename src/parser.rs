@@ -192,7 +192,10 @@ impl<'a> Parser<'a> {
 
     fn function(&mut self, kind: &str) -> Result<Stmt, LoxResult> {
         let name = self.consume(TokenType::Identifier, &format!("Expect {kind} name."))?;
-        self.consume(TokenType::LeftParen, &format!("Expect '(' after {kind} name."))?;
+        self.consume(
+            TokenType::LeftParen,
+            &format!("Expect '(' after {kind} name."),
+        )?;
 
         let mut params = Vec::new();
         if !self.check(TokenType::RightParen) {
@@ -211,10 +214,17 @@ impl<'a> Parser<'a> {
 
         self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
 
-        self.consume(TokenType::LeftBrace, &format!("Expect '{{' before {kind} body."))?;
+        self.consume(
+            TokenType::LeftBrace,
+            &format!("Expect '{{' before {kind} body."),
+        )?;
         let body = self.block()?;
 
-        Ok(Stmt::Function(FunctionStmt { name, params, body }))
+        Ok(Stmt::Function(FunctionStmt {
+            name,
+            params: Rc::new(params),
+            body: Rc::new(body),
+        }))
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, LoxResult> {

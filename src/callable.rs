@@ -4,7 +4,6 @@ use crate::LoxResult;
 use std::fmt::{self, Debug, Display};
 use std::rc::Rc;
 
-
 #[derive(Clone)]
 pub struct Callable {
     pub func: Rc<dyn LoxCallable>,

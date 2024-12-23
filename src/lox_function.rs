@@ -1,46 +1,45 @@
-use crate::environment::Environment;
-use crate::object::*;
 use crate::callable::*;
+use crate::environment::Environment;
 use crate::error::*;
-use crate::stmt::*;
-use std::borrow::BorrowMut;
-use std::rc::Rc;
 use crate::interpreter::*;
-use crate::environment::*;  
-use std::ops::Deref;
+use crate::object::*;
+use crate::stmt::*;
+use crate::token::*;
+use std::rc::Rc;
 
 pub struct LoxFunction {
-    declaration : Rc<FunctionStmt>,
+    name: Token,
+    params: Rc<Vec<Token>>,
+    body: Rc<Vec<Stmt>>,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &Rc<FunctionStmt>) -> Self {
+    pub fn new(declaration: &FunctionStmt) -> Self {
         Self {
-            declaration: Rc::clone(declaration),
+            name: declaration.name.dup(),
+            params: Rc::clone(&declaration.params),
+            body: Rc::clone(&declaration.body),
         }
     }
 }
 
 impl LoxCallable for LoxFunction {
-    fn call(&self, interpreter: &crate::Interpreter, arguments: Vec<Object>) -> Result<Object, LoxResult> {
-
-
+    fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>) -> Result<Object, LoxResult> {
         let mut e = Environment::new_with_enclosing(Rc::clone(&interpreter.globals));
 
-        for (param, arg) in self.declaration.params.iter().zip(arguments.iter()) {
+        for (param, arg) in self.params.iter().zip(arguments.iter()) {
             e.define(param.as_string(), arg.clone());
         }
 
-        interpreter.execute_block(&self.declaration.body, e)?;
+        interpreter.execute_block(&self.body, e)?;
         Ok(Object::Nil)
-
     }
 
     fn arity(&self) -> usize {
-        self.declaration.params.len()
+        self.params.len()
     }
 
     fn to_string(&self) -> String {
-        self.declaration.name.as_string().into()
+        self.name.as_string().into()
     }
 }
