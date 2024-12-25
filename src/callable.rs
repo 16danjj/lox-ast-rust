@@ -16,8 +16,8 @@ impl Debug for Callable {
 }
 
 impl PartialEq for Callable {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.func, &other.func)
+    fn eq(&self, _other: &Self) -> bool {
+        false 
     }
 }
 
