@@ -217,11 +217,9 @@ impl<'a> Parser<'a> {
             params.push(self.consume(TokenType::Identifier, "Expect parameter name.")?);
 
             while self.is_match(&[TokenType::Comma]) {
-                if params.len() >= 255 {
-                    if !self.had_error {
-                        let peek = self.peek().dup();
-                        self.error(&peek, "Can't have more than 255 parameters.");
-                    }
+                if params.len() >= 255 && !self.had_error {
+                    let peek = self.peek().dup();
+                    self.error(&peek, "Can't have more than 255 parameters.");
                 }
                 params.push(self.consume(TokenType::Identifier, "Expect parameter name.")?);
             }

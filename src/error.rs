@@ -7,7 +7,7 @@ pub enum LoxResult {
     LoxError { line: usize, message: String },
     SystemError { message: String },
     Break,
-    ReturnValue {value: Object}
+    ReturnValue { value: Object },
 }
 
 impl LoxResult {
@@ -62,7 +62,7 @@ impl LoxResult {
             LoxResult::SystemError { message } => {
                 eprint!("System Error: {message}")
             }
-            LoxResult::Break | LoxResult::ReturnValue {..}=> {}
+            LoxResult::Break | LoxResult::ReturnValue { .. } => {}
         };
     }
 
