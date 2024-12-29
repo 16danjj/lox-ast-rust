@@ -115,17 +115,17 @@ impl<'a> Parser<'a> {
 
         if let Some(incr) = increment {
             body = Stmt::Block(BlockStmt {
-                statements: vec![body, Stmt::Expression(ExpressionStmt { expression: incr })],
+                statements: vec![body, Stmt::Expression(ExpressionStmt { expression: Rc::new(incr) })],
             });
         }
 
         body = Stmt::While(WhileStmt {
             condition: if let Some(cond) = condition {
-                cond
+                Rc::new(cond)
             } else {
-                Expr::Literal(LiteralExpr {
+                Rc::new(Expr::Literal(LiteralExpr {
                     value: Some(Object::Bool(true)),
-                })
+                }))
             },
             body: Box::new(body),
         });
@@ -141,7 +141,7 @@ impl<'a> Parser<'a> {
 
     fn if_statement(&mut self) -> Result<Stmt, LoxResult> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'if'.")?;
-        let condition = self.expression()?;
+        let condition = Rc::new(self.expression()?);
         self.consume(TokenType::RightParen, "Expect ')' after 'if condition'.")?;
 
         let then_branch = Box::new(self.statement()?);
@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
     }
 
     fn print_statement(&mut self) -> Result<Stmt, LoxResult> {
-        let value = self.expression()?;
+        let value = Rc::new(self.expression()?);
         self.consume(TokenType::SemiColon, "Expect ';' after value.")?;
         Ok(Stmt::Print(PrintStmt { expression: value }))
     }
@@ -169,7 +169,7 @@ impl<'a> Parser<'a> {
         let value = if self.check(TokenType::SemiColon) {
             None
         } else {
-            Some(self.expression()?)
+            Some(Rc::new(self.expression()?))
         };
 
         self.consume(TokenType::SemiColon, "Expect ';' after return value.")?;
@@ -179,7 +179,7 @@ impl<'a> Parser<'a> {
     fn var_declaration(&mut self) -> Result<Stmt, LoxResult> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
         let initializer = if self.is_match(&[TokenType::Assign]) {
-            Some(self.expression()?)
+            Some(Rc::new(self.expression()?))
         } else {
             None
         };
@@ -193,14 +193,14 @@ impl<'a> Parser<'a> {
 
     fn while_statement(&mut self) -> Result<Stmt, LoxResult> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
-        let condition = self.expression()?;
+        let condition = Rc::new(self.expression()?);
         self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
         let body = Box::new(self.statement()?);
         Ok(Stmt::While(WhileStmt { condition, body }))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, LoxResult> {
-        let expr = self.expression()?;
+        let expr = Rc::new(self.expression()?);
         self.consume(TokenType::SemiColon, "Expect ';' after value.")?;
         Ok(Stmt::Expression(ExpressionStmt { expression: expr }))
     }
@@ -261,7 +261,7 @@ impl<'a> Parser<'a> {
             if let Expr::Variable(expr) = expr {
                 return Ok(Expr::Assign(AssignExpr {
                     name: expr.name.dup(),
-                    value: Box::new(value),
+                    value: Rc::new(value),
                 }));
             } else {
                 self.error(&equals, "Invalid assignment target.");
@@ -276,9 +276,9 @@ impl<'a> Parser<'a> {
 
         while self.is_match(&[TokenType::Or]) {
             let operator = self.previous().dup();
-            let right = Box::new(self.and()?);
+            let right = Rc::new(self.and()?);
             expr = Expr::Logical(LogicalExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
                 right,
             })
@@ -292,9 +292,9 @@ impl<'a> Parser<'a> {
 
         while self.is_match(&[TokenType::And]) {
             let operator = self.previous().dup();
-            let right = Box::new(self.equality()?);
+            let right = Rc::new(self.equality()?);
             expr = Expr::Logical(LogicalExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
                 right,
             });
@@ -310,9 +310,9 @@ impl<'a> Parser<'a> {
             let operator = self.previous().dup();
             let right = self.comparison()?;
             expr = Expr::Binary(BinaryExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
-                right: Box::new(right),
+                right: Rc::new(right),
             });
         }
 
@@ -332,9 +332,9 @@ impl<'a> Parser<'a> {
             let right = self.term()?;
 
             expr = Expr::Binary(BinaryExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
-                right: Box::new(right),
+                right: Rc::new(right),
             });
         }
 
@@ -349,9 +349,9 @@ impl<'a> Parser<'a> {
             let right = self.factor()?;
 
             expr = Expr::Binary(BinaryExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
-                right: Box::new(right),
+                right: Rc::new(right),
             });
         }
 
@@ -366,9 +366,9 @@ impl<'a> Parser<'a> {
             let right = self.unary()?;
 
             expr = Expr::Binary(BinaryExpr {
-                left: Box::new(expr),
+                left: Rc::new(expr),
                 operator,
-                right: Box::new(right),
+                right: Rc::new(right),
             });
         }
 
@@ -381,7 +381,7 @@ impl<'a> Parser<'a> {
             let right = self.unary()?;
             return Ok(Expr::Unary(UnaryExpr {
                 operator,
-                right: Box::new(right),
+                right: Rc::new(right),
             }));
         }
 
@@ -463,7 +463,7 @@ impl<'a> Parser<'a> {
             let expr = self.expression()?;
             self.consume(TokenType::RightParen, "Expect ')' after expression")?;
             return Ok(Expr::Grouping(GroupingExpr {
-                expression: Box::new(expr),
+                expression: Rc::new(expr),
             }));
         }
 

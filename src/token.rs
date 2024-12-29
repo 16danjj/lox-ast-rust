@@ -37,8 +37,8 @@ impl Token {
         self.ttype
     }
 
-    pub fn as_string(&self) -> &String {
-        &self.lexeme
+    pub fn as_string(&self) -> String {
+        self.lexeme.clone()
     }
 
     pub fn dup(&self) -> Token {

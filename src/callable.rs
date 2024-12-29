@@ -17,7 +17,7 @@ impl Debug for Callable {
 
 impl PartialEq for Callable {
     fn eq(&self, _other: &Self) -> bool {
-        false 
+        false
     }
 }
 

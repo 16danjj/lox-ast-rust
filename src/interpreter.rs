@@ -10,22 +10,24 @@ use crate::token_type::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::ops::Deref;
+use std::collections::HashMap;
 
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
     nest: RefCell<usize>,
+    locals: RefCell<HashMap<Expr, usize>>
 }
 
 impl StmtVisitor<()> for Interpreter {
-    fn visit_return_stmt(&self, stmt: &ReturnStmt) -> Result<(), LoxResult> {
+    fn visit_return_stmt(&self, _: &Stmt, stmt: &ReturnStmt) -> Result<(), LoxResult> {
         if let Some(value) = &stmt.value {
             Err(LoxResult::return_value(self.evaluate(value)?))
         } else {
             Err(LoxResult::return_value(Object::Nil))
         }
     }
-    fn visit_function_stmt(&self, stmt: &FunctionStmt) -> Result<(), LoxResult> {
+    fn visit_function_stmt(&self, _: &Stmt, stmt: &FunctionStmt) -> Result<(), LoxResult> {
         let function = LoxFunction::new(stmt, self.environment.borrow().deref());
         self.environment.borrow().borrow_mut().define(
             &stmt.name.as_string(),
@@ -36,7 +38,7 @@ impl StmtVisitor<()> for Interpreter {
         Ok(())
     }
 
-    fn visit_break_stmt(&self, stmt: &BreakStmt) -> Result<(), LoxResult> {
+    fn visit_break_stmt(&self, _: &Stmt, stmt: &BreakStmt) -> Result<(), LoxResult> {
         if *self.nest.borrow() == 0 {
             Err(LoxResult::runtime_error(
                 &stmt.token,
@@ -46,7 +48,7 @@ impl StmtVisitor<()> for Interpreter {
             Err(LoxResult::Break)
         }
     }
-    fn visit_while_stmt(&self, stmt: &WhileStmt) -> Result<(), LoxResult> {
+    fn visit_while_stmt(&self, _: &Stmt, stmt: &WhileStmt) -> Result<(), LoxResult> {
         *self.nest.borrow_mut() += 1;
         while self.is_truthy(&self.evaluate(&stmt.condition)?) {
             match self.execute(&stmt.body) {
@@ -58,7 +60,7 @@ impl StmtVisitor<()> for Interpreter {
         *self.nest.borrow_mut() -= 1;
         Ok(())
     }
-    fn visit_if_stmt(&self, stmt: &IfStmt) -> Result<(), LoxResult> {
+    fn visit_if_stmt(&self, _: &Stmt, stmt: &IfStmt) -> Result<(), LoxResult> {
         if self.is_truthy(&self.evaluate(&stmt.condition)?) {
             self.execute(&stmt.then_branch)
         } else if let Some(else_branch) = &stmt.else_branch {
@@ -68,24 +70,24 @@ impl StmtVisitor<()> for Interpreter {
         }
     }
 
-    fn visit_block_stmt(&self, stmt: &BlockStmt) -> Result<(), LoxResult> {
+    fn visit_block_stmt(&self, _: &Stmt, stmt: &BlockStmt) -> Result<(), LoxResult> {
         let e = Environment::new_with_enclosing(self.environment.borrow().clone());
 
         self.execute_block(&stmt.statements, e)
     }
 
-    fn visit_expression_stmt(&self, stmt: &ExpressionStmt) -> Result<(), LoxResult> {
+    fn visit_expression_stmt(&self, _: &Stmt, stmt: &ExpressionStmt) -> Result<(), LoxResult> {
         self.evaluate(&stmt.expression)?;
         Ok(())
     }
 
-    fn visit_print_stmt(&self, stmt: &PrintStmt) -> Result<(), LoxResult> {
+    fn visit_print_stmt(&self, _: &Stmt, stmt: &PrintStmt) -> Result<(), LoxResult> {
         let value = self.evaluate(&stmt.expression)?;
         println!("{value}");
         Ok(())
     }
 
-    fn visit_var_stmt(&self, stmt: &VarStmt) -> Result<(), LoxResult> {
+    fn visit_var_stmt(&self, _: &Stmt, stmt: &VarStmt) -> Result<(), LoxResult> {
         let value = if let Some(initializer) = &stmt.initializer {
             self.evaluate(initializer)?
         } else {
@@ -95,13 +97,13 @@ impl StmtVisitor<()> for Interpreter {
         self.environment
             .borrow()
             .borrow_mut()
-            .define(stmt.name.as_string(), value);
+            .define(&stmt.name.as_string(), value);
         Ok(())
     }
 }
 
 impl ExprVisitor<Object> for Interpreter {
-    fn visit_call_expr(&self, expr: &CallExpr) -> Result<Object, LoxResult> {
+    fn visit_call_expr(&self, _: &Expr, expr: &CallExpr) -> Result<Object, LoxResult> {
         let callee = self.evaluate(&expr.callee)?;
         let mut arguments = Vec::new();
         for argument in &expr.arguments {
@@ -127,7 +129,7 @@ impl ExprVisitor<Object> for Interpreter {
             ))
         }
     }
-    fn visit_logical_expr(&self, expr: &LogicalExpr) -> Result<Object, LoxResult> {
+    fn visit_logical_expr(&self, _: &Expr, expr: &LogicalExpr) -> Result<Object, LoxResult> {
         let left = self.evaluate(&expr.left)?;
 
         if expr.operator.is(TokenType::Or) {
@@ -142,7 +144,7 @@ impl ExprVisitor<Object> for Interpreter {
 
         self.evaluate(&expr.right)
     }
-    fn visit_assign_expr(&self, expr: &AssignExpr) -> Result<Object, LoxResult> {
+    fn visit_assign_expr(&self, _: &Expr, expr: &AssignExpr) -> Result<Object, LoxResult> {
         let value = self.evaluate(&expr.value)?;
         self.environment
             .borrow()
@@ -151,11 +153,11 @@ impl ExprVisitor<Object> for Interpreter {
         Ok(value)
     }
 
-    fn visit_literal_expr(&self, expr: &LiteralExpr) -> Result<Object, LoxResult> {
+    fn visit_literal_expr(&self, _: &Expr, expr: &LiteralExpr) -> Result<Object, LoxResult> {
         Ok(expr.value.clone().unwrap())
     }
 
-    fn visit_binary_expr(&self, expr: &BinaryExpr) -> Result<Object, LoxResult> {
+    fn visit_binary_expr(&self, _: &Expr, expr: &BinaryExpr) -> Result<Object, LoxResult> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;
         let op = expr.operator.token_type();
@@ -216,10 +218,10 @@ impl ExprVisitor<Object> for Interpreter {
             Ok(result)
         }
     }
-    fn visit_grouping_expr(&self, expr: &GroupingExpr) -> Result<Object, LoxResult> {
+    fn visit_grouping_expr(&self, _: &Expr, expr: &GroupingExpr) -> Result<Object, LoxResult> {
         self.evaluate(&expr.expression)
     }
-    fn visit_unary_expr(&self, expr: &UnaryExpr) -> Result<Object, LoxResult> {
+    fn visit_unary_expr(&self, _: &Expr, expr: &UnaryExpr) -> Result<Object, LoxResult> {
         let right = self.evaluate(&expr.right)?;
 
         match expr.operator.token_type() {
@@ -232,7 +234,7 @@ impl ExprVisitor<Object> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, expr: &VariableExpr) -> Result<Object, LoxResult> {
+    fn visit_variable_expr(&self, _: &Expr, expr: &VariableExpr) -> Result<Object, LoxResult> {
         self.environment.borrow().borrow().get(&expr.name)
     }
 }
@@ -251,6 +253,7 @@ impl Interpreter {
             globals: Rc::clone(&globals),
             environment: RefCell::new(Rc::clone(&globals)),
             nest: RefCell::new(0),
+            locals: RefCell::new(HashMap::new())
         }
     }
     fn evaluate(&self, expr: &Expr) -> Result<Object, LoxResult> {
@@ -297,6 +300,10 @@ impl Interpreter {
 
     pub fn print_environment(&self) {
         println!("{:?}", self.environment);
+    }
+
+    pub fn resolve(&self, expr: &Expr, depth: usize){
+        //self.locals.borrow_mut().insert(expr, depth);
     }
 }
 

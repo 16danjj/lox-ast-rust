@@ -3,24 +3,19 @@ use std::env::args;
 use std::io::{self, stdout, BufRead, Write};
 mod error;
 use error::*;
-
+mod scanner;
 mod token;
 mod token_type;
-
-mod scanner;
-
 use scanner::*;
-
 mod parser;
 use parser::*;
-
-mod expr;
-mod stmt;
-
 mod callable;
 mod environment;
+mod expr;
 mod lox_function;
 mod native_functions;
+mod resolver;
+mod stmt;
 
 //mod ast_printer;
 //use ast_printer::*;
