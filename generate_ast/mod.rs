@@ -16,7 +16,7 @@ pub fn generate_ast(output_dir: &str) -> io::Result<()> {
         &[
             "Assign   : Token name, Rc<Expr> value",
             "Binary   : Rc<Expr> left, Token operator, Rc<Expr> right",
-            "Call : Rc<Expr> callee, Token paren, Vec<Expr> arguments",
+            "Call : Rc<Expr> callee, Token paren, Vec<Rc<Expr>> arguments",
             "Grouping : Rc<Expr> expression",
             "Literal  : Option<Object> value",
             "Logical : Rc<Expr> left, Token operator, Rc<Expr> right",
@@ -30,15 +30,15 @@ pub fn generate_ast(output_dir: &str) -> io::Result<()> {
         "Stmt",
         &["error", "expr", "token", "rc"],
         &[
-            "Block : Vec<Stmt> statements",
+            "Block : Rc<Vec<Rc<Stmt>>> statements",
             "Break : Token token",
             "Expression : Rc<Expr> expression",
-            "Function : Token name, Rc<Vec<Token>> params, Rc<Vec<Stmt>> body",
-            "If : Rc<Expr> condition, Box<Stmt> then_branch, Option<Box<Stmt>> else_branch",
+            "Function : Token name, Rc<Vec<Token>> params, Rc<Vec<Rc<Stmt>>> body",
+            "If : Rc<Expr> condition, Rc<Stmt> then_branch, Option<Rc<Stmt>> else_branch",
             "Print : Rc<Expr> expression",
             "Return : Token keyword, Option<Rc<Expr>> value",
             "Var : Token name, Option<Rc<Expr>> initializer",
-            "While : Rc<Expr> condition, Box<Stmt> body",
+            "While : Rc<Expr> condition, Rc<Stmt> body",
         ],
     )?;
 
@@ -86,13 +86,13 @@ fn define_ast(
     writeln!(file, "}}\n")?;
 
     writeln!(file, "impl {} {{", base_name)?;
-    writeln!(file, "    pub fn accept<T>(&self, {}_visitor: &dyn {base_name}Visitor<T>) -> Result<T, LoxResult> {{", base_name.to_lowercase())?;
+    writeln!(file, "    pub fn accept<T>(&self, wrapper: &Rc<{}>, {}_visitor: &dyn {base_name}Visitor<T>) -> Result<T, LoxResult> {{", base_name, base_name.to_lowercase())?;
     writeln!(file, "        match self {{")?;
 
     for t in &tree_types {
         writeln!(
             file,
-            "            {0}::{1}(v) => {3}_visitor.visit_{2}_{3}(self, &v),",
+            "            {0}::{1}(v) => {3}_visitor.visit_{2}_{3}(wrapper, &v),",
             base_name,
             t.base_class_name,
             t.base_class_name.to_lowercase(),
@@ -115,7 +115,7 @@ fn define_ast(
     for t in &tree_types {
         writeln!(
             file,
-            "    fn visit_{0}_{1}(&self, wrapper: &{3}, {1}: &{2}) -> Result<T, LoxResult>;",
+            "    fn visit_{0}_{1}(&self, wrapper: &Rc<{3}>, {1}: &{2}) -> Result<T, LoxResult>;",
             t.base_class_name.to_lowercase(),
             base_name.to_lowercase(),
             t.class_name,

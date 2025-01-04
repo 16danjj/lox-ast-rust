@@ -21,7 +21,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxResult> {
+    pub fn parse(&mut self) -> Result<Vec<Rc<Stmt>>, LoxResult> {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         self.assignment()
     }
 
-    fn declaration(&mut self) -> Result<Stmt, LoxResult> {
+    fn declaration(&mut self) -> Result<Rc<Stmt>, LoxResult> {
         let result = if self.is_match(&[TokenType::Fun]) {
             self.function("function")
         } else if self.is_match(&[TokenType::Var]) {
@@ -55,36 +55,36 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn statement(&mut self) -> Result<Stmt, LoxResult> {
+    fn statement(&mut self) -> Result<Rc<Stmt>, LoxResult> {
         if self.is_match(&[TokenType::Break]) {
             let token = self.peek().dup();
             self.consume(TokenType::SemiColon, "Expect ';' after break statement.")?;
-            return Ok(Stmt::Break(BreakStmt { token }));
+            return Ok(Rc::new(Stmt::Break(BreakStmt { token })));
         }
         if self.is_match(&[TokenType::For]) {
             return self.for_statement();
         }
         if self.is_match(&[TokenType::If]) {
-            return self.if_statement();
+            return Ok(Rc::new(self.if_statement()?));
         }
         if self.is_match(&[TokenType::Print]) {
-            return self.print_statement();
+            return Ok(Rc::new(self.print_statement()?));
         }
         if self.is_match(&[TokenType::Return]) {
-            return self.return_statement();
+            return Ok(Rc::new(self.return_statement()?));
         }
         if self.is_match(&[TokenType::While]) {
-            return self.while_statement();
+            return Ok(Rc::new(self.while_statement()?));
         }
         if self.is_match(&[TokenType::LeftBrace]) {
-            return Ok(Stmt::Block(BlockStmt {
-                statements: self.block()?,
-            }));
+            return Ok(Rc::new(Stmt::Block(BlockStmt {
+                statements: Rc::new(self.block()?),
+            })));
         }
         self.expression_statement()
     }
 
-    fn for_statement(&mut self) -> Result<Stmt, LoxResult> {
+    fn for_statement(&mut self) -> Result<Rc<Stmt>, LoxResult> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'for'.")?;
 
         let initializer = if self.is_match(&[TokenType::SemiColon]) {
@@ -114,12 +114,12 @@ impl<'a> Parser<'a> {
         let mut body = self.statement()?;
 
         if let Some(incr) = increment {
-            body = Stmt::Block(BlockStmt {
-                statements: vec![body, Stmt::Expression(ExpressionStmt { expression: Rc::new(incr) })],
-            });
+            body = Rc::new(Stmt::Block(BlockStmt {
+                statements: Rc::new(vec![body, Rc::new(Stmt::Expression(ExpressionStmt { expression: Rc::new(incr) }))]),
+            }));
         }
 
-        body = Stmt::While(WhileStmt {
+        body = Rc::new(Stmt::While(WhileStmt {
             condition: if let Some(cond) = condition {
                 Rc::new(cond)
             } else {
@@ -127,13 +127,13 @@ impl<'a> Parser<'a> {
                     value: Some(Object::Bool(true)),
                 }))
             },
-            body: Box::new(body),
-        });
+            body,
+        }));
 
         if let Some(init) = initializer {
-            body = Stmt::Block(BlockStmt {
-                statements: vec![init, body],
-            });
+            body = Rc::new(Stmt::Block(BlockStmt {
+                statements: Rc::new(vec![init, body]),
+            }));
         }
 
         Ok(body)
@@ -144,9 +144,9 @@ impl<'a> Parser<'a> {
         let condition = Rc::new(self.expression()?);
         self.consume(TokenType::RightParen, "Expect ')' after 'if condition'.")?;
 
-        let then_branch = Box::new(self.statement()?);
+        let then_branch = self.statement()?;
         let else_branch = if self.is_match(&[TokenType::Else]) {
-            Some(Box::new(self.statement()?))
+            Some(self.statement()?)
         } else {
             None
         };
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
         Ok(Stmt::Return(ReturnStmt { keyword, value }))
     }
 
-    fn var_declaration(&mut self) -> Result<Stmt, LoxResult> {
+    fn var_declaration(&mut self) -> Result<Rc<Stmt>, LoxResult> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
         let initializer = if self.is_match(&[TokenType::Assign]) {
             Some(Rc::new(self.expression()?))
@@ -188,24 +188,24 @@ impl<'a> Parser<'a> {
             TokenType::SemiColon,
             "Expect ';' after variable declaration.",
         )?;
-        Ok(Stmt::Var(VarStmt { name, initializer }))
+        Ok(Rc::new(Stmt::Var(VarStmt { name, initializer })))
     }
 
     fn while_statement(&mut self) -> Result<Stmt, LoxResult> {
         self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
         let condition = Rc::new(self.expression()?);
         self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
-        let body = Box::new(self.statement()?);
+        let body = self.statement()?;
         Ok(Stmt::While(WhileStmt { condition, body }))
     }
 
-    fn expression_statement(&mut self) -> Result<Stmt, LoxResult> {
+    fn expression_statement(&mut self) -> Result<Rc<Stmt>, LoxResult> {
         let expr = Rc::new(self.expression()?);
         self.consume(TokenType::SemiColon, "Expect ';' after value.")?;
-        Ok(Stmt::Expression(ExpressionStmt { expression: expr }))
+        Ok(Rc::new(Stmt::Expression(ExpressionStmt { expression: expr })))
     }
 
-    fn function(&mut self, kind: &str) -> Result<Stmt, LoxResult> {
+    fn function(&mut self, kind: &str) -> Result<Rc<Stmt>, LoxResult> {
         let name = self.consume(TokenType::Identifier, &format!("Expect {kind} name."))?;
         self.consume(
             TokenType::LeftParen,
@@ -233,18 +233,18 @@ impl<'a> Parser<'a> {
         )?;
         let body = self.block()?;
 
-        Ok(Stmt::Function(FunctionStmt {
+        Ok(Rc::new(Stmt::Function(FunctionStmt {
             name,
             params: Rc::new(params),
             body: Rc::new(body),
-        }))
+        })))
     }
 
-    fn block(&mut self) -> Result<Vec<Stmt>, LoxResult> {
+    fn block(&mut self) -> Result<Vec<Rc<Stmt>>, LoxResult> {
         let mut statements = Vec::new();
 
         while !self.check(TokenType::RightBrace) && !self.is_at_end() {
-            statements.push(self.declaration().unwrap());
+            statements.push(self.declaration()?);
         }
 
         self.consume(TokenType::RightBrace, "Expect '}' after block")?;
@@ -392,7 +392,7 @@ impl<'a> Parser<'a> {
         let mut arguments = Vec::new();
 
         if !self.check(TokenType::RightParen) {
-            arguments.push(self.expression()?);
+            arguments.push(Rc::new(self.expression()?));
             while self.is_match(&[TokenType::Comma]) {
                 if arguments.len() >= 255 {
                     if !self.had_error {
@@ -400,7 +400,7 @@ impl<'a> Parser<'a> {
                         self.error(&peek, "Can't have more than 255 arguments");
                     }
                 } else {
-                    arguments.push(self.expression()?);
+                    arguments.push(Rc::new(self.expression()?));
                 }
             }
         }
