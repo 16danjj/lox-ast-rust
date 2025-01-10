@@ -4,25 +4,24 @@ use crate::interpreter::*;
 use crate::stmt::*;
 use crate::token::*;
 use std::cell::RefCell;
-use std::collections::btree_map::Values;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::ops::Deref;
 
-struct Resolver {
-    interpreter: Interpreter,
+pub struct Resolver<'a> {
+    interpreter: &'a Interpreter,
     scopes: RefCell<Vec<RefCell<HashMap<String, bool>>>>,
 }
 
-impl Resolver {
-    pub fn new(interpreter: Interpreter) -> Self {
+impl<'a> Resolver<'a> {
+    pub fn new(interpreter: &'a Interpreter) -> Self {
         Self {
             interpreter,
             scopes: RefCell::new(Vec::new()),
         }
     }
 
-    fn resolve(&self, statements: &Rc<Vec<Rc<Stmt>>>) -> Result<(), LoxResult> {
+    pub fn resolve(&self, statements: &Rc<Vec<Rc<Stmt>>>) -> Result<(), LoxResult> {
         for statement in statements.deref() {
             self.resolve_stmt(statement.clone())?;
         }
@@ -61,7 +60,7 @@ impl Resolver {
     fn resolve_local(&self, expr: Rc<Expr>, name: &Token) {
         for (scope, map) in self.scopes.borrow().iter().rev().enumerate() {
             if map.borrow().contains_key(&name.as_string()){
-                self.interpreter.resolve(&expr, scope);
+                self.interpreter.resolve(expr, scope);
                 return;
             }
         }
@@ -83,7 +82,7 @@ impl Resolver {
     }
 }
 
-impl StmtVisitor<()> for Resolver {
+impl<'a> StmtVisitor<()> for Resolver<'a> {
     fn visit_return_stmt(&self, _:Rc<Stmt>, stmt: &ReturnStmt) -> Result<(), LoxResult> {
         
         if let Some(value) = stmt.value.clone() {
@@ -97,11 +96,11 @@ impl StmtVisitor<()> for Resolver {
         self.declare(&stmt.name);
         self.define(&stmt.name);
 
-        self.resolve_function(stmt);
+        self.resolve_function(stmt)?;
         Ok(())
     }
 
-    fn visit_break_stmt(&self, _:Rc<Stmt>, stmt: &BreakStmt) -> Result<(), LoxResult> {
+    fn visit_break_stmt(&self, _:Rc<Stmt>, _stmt: &BreakStmt) -> Result<(), LoxResult> {
         Ok(())
     }
 
@@ -147,7 +146,7 @@ impl StmtVisitor<()> for Resolver {
     }
 }
 
-impl ExprVisitor<()> for Resolver {
+impl<'a> ExprVisitor<()> for Resolver<'a> {
     fn visit_call_expr(&self, _:Rc<Expr>, expr: &CallExpr) -> Result<(), LoxResult> {
         self.resolve_expr(expr.callee.clone())?;
 
@@ -169,7 +168,7 @@ impl ExprVisitor<()> for Resolver {
         Ok(())
     }
 
-    fn visit_literal_expr(&self, _:Rc<Expr>, expr: &LiteralExpr) -> Result<(), LoxResult> {
+    fn visit_literal_expr(&self, _:Rc<Expr>, _expr: &LiteralExpr) -> Result<(), LoxResult> {
         Ok(())
     }
 
@@ -190,7 +189,7 @@ impl ExprVisitor<()> for Resolver {
     }
 
     fn visit_variable_expr(&self, wrapper: Rc<Expr>, expr: &VariableExpr) -> Result<(), LoxResult> {
-         if !self.scopes.borrow().is_empty() && *self.scopes.borrow().last().unwrap().borrow().get(&expr.name.as_string()).unwrap() == false {
+         if !self.scopes.borrow().is_empty() && self.scopes.borrow().last().unwrap().borrow().get(&expr.name.as_string()) == Some(&false) {
             Err(LoxResult::runtime_error(&expr.name, "Can't read local variable in its own initializer"))
          } else {
             self.resolve_local(wrapper, &expr.name);

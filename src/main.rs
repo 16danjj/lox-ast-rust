@@ -1,5 +1,4 @@
 use std::env::args;
-//use std::f32::consts::PI;
 use std::io::{self, stdout, BufRead, Write};
 mod error;
 use error::*;
@@ -17,12 +16,11 @@ mod native_functions;
 mod resolver;
 mod stmt;
 
-//mod ast_printer;
-//use ast_printer::*;
-
 mod interpreter;
 use interpreter::*;
+use resolver::*;
 mod object;
+use std::rc::Rc;
 
 pub fn main() {
     let args: Vec<String> = args().collect();
@@ -88,7 +86,10 @@ impl Lox {
         let statements = parser.parse()?;
 
         if parser.success() {
-            self.interpreter.interpret(&statements);
+            let resolver = Resolver::new(&self.interpreter);
+            let s = Rc::new(statements);
+            resolver.resolve(&Rc::clone(&s))?;
+            self.interpreter.interpret(&Rc::clone(&s));
         }
         Ok(())
     }

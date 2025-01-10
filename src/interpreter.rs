@@ -11,6 +11,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::ops::Deref;
 use std::collections::HashMap;
+use crate::token::*;
 
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
@@ -144,12 +145,18 @@ impl ExprVisitor<Object> for Interpreter {
 
         self.evaluate(expr.right.clone())
     }
-    fn visit_assign_expr(&self, _: Rc<Expr>, expr: &AssignExpr) -> Result<Object, LoxResult> {
+    fn visit_assign_expr(&self, wrapper: Rc<Expr>, expr: &AssignExpr) -> Result<Object, LoxResult> {
         let value = self.evaluate(expr.value.clone())?;
-        self.environment
+
+        if let Some(distance) = self.locals.borrow().get(&wrapper) {
+            self.environment
             .borrow()
             .borrow_mut()
-            .assign(&expr.name, value.clone())?;
+            .assign_at(*distance, &expr.name, value.clone())?;
+        } else {
+            self.globals.borrow_mut().assign(&expr.name, value.clone())?;
+        }
+
         Ok(value)
     }
 
@@ -234,8 +241,9 @@ impl ExprVisitor<Object> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, _: Rc<Expr>, expr: &VariableExpr) -> Result<Object, LoxResult> {
-        self.environment.borrow().borrow().get(&expr.name)
+    fn visit_variable_expr(&self, wrapper: Rc<Expr>, expr: &VariableExpr) -> Result<Object, LoxResult> {
+        //self.environment.borrow().borrow().get(&expr.name)
+        self.look_up_variable(&expr.name, wrapper)
     }
 }
 
@@ -302,8 +310,16 @@ impl Interpreter {
         println!("{:?}", self.environment);
     }
 
-    pub fn resolve(&self, expr: &Rc<Expr>, depth: usize){
-        //self.locals.borrow_mut().insert(expr, depth);
+    pub fn resolve(&self, expr: Rc<Expr>, depth: usize){
+        self.locals.borrow_mut().insert(expr, depth);
+    }
+
+    fn look_up_variable(&self, name: &Token, expr: Rc<Expr>)->Result<Object, LoxResult>{
+        if let Some(distance) = self.locals.borrow().get(&expr){
+            self.environment.borrow().borrow().get_at(*distance, &name.as_string())
+        } else {
+            self.globals.borrow().get(name)
+        }
     }
 }
 
