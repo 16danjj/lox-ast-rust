@@ -14,7 +14,7 @@ mod environment;
 mod expr;
 mod lox_function;
 mod native_functions;
-//mod resolver;
+mod resolver;
 mod stmt;
 
 //mod ast_printer;
