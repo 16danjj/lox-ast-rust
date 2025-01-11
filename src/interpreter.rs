@@ -16,7 +16,6 @@ use crate::token::*;
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
-    nest: RefCell<usize>,
     locals: RefCell<HashMap<Rc<Expr>, usize>>
 }
 
@@ -39,18 +38,10 @@ impl StmtVisitor<()> for Interpreter {
         Ok(())
     }
 
-    fn visit_break_stmt(&self, _: Rc<Stmt>, stmt: &BreakStmt) -> Result<(), LoxResult> {
-        if *self.nest.borrow() == 0 {
-            Err(LoxResult::runtime_error(
-                &stmt.token,
-                "Break outside of while/for loop.",
-            ))
-        } else {
+    fn visit_break_stmt(&self, _: Rc<Stmt>, _stmt: &BreakStmt) -> Result<(), LoxResult> {
             Err(LoxResult::Break)
-        }
     }
     fn visit_while_stmt(&self, _: Rc<Stmt>, stmt: &WhileStmt) -> Result<(), LoxResult> {
-        *self.nest.borrow_mut() += 1;
         while self.is_truthy(&self.evaluate(stmt.condition.clone())?) {
             match self.execute(stmt.body.clone()) {
                 Err(LoxResult::Break) => break,
@@ -58,7 +49,6 @@ impl StmtVisitor<()> for Interpreter {
                 Ok(_) => {}
             }
         }
-        *self.nest.borrow_mut() -= 1;
         Ok(())
     }
     fn visit_if_stmt(&self, _: Rc<Stmt>, stmt: &IfStmt) -> Result<(), LoxResult> {
@@ -260,7 +250,6 @@ impl Interpreter {
         Interpreter {
             globals: Rc::clone(&globals),
             environment: RefCell::new(Rc::clone(&globals)),
-            nest: RefCell::new(0),
             locals: RefCell::new(HashMap::new())
         }
     }
@@ -295,7 +284,6 @@ impl Interpreter {
 
     pub fn interpret(&self, statements: &[Rc<Stmt>]) -> bool {
         let mut success = true;
-        *self.nest.borrow_mut() = 0;
 
         for statement in statements {
             if self.execute(statement.clone()).is_err() {
