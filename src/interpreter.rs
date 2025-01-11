@@ -2,24 +2,33 @@ use crate::callable::*;
 use crate::environment::Environment;
 use crate::error::*;
 use crate::expr::*;
+use crate::lox_class::*;
 use crate::lox_function::*;
 use crate::native_functions::*;
 use crate::object::*;
 use crate::stmt::*;
+use crate::token::*;
 use crate::token_type::*;
 use std::cell::RefCell;
-use std::rc::Rc;
-use std::ops::Deref;
 use std::collections::HashMap;
-use crate::token::*;
+use std::ops::Deref;
+use std::rc::Rc;
 
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: RefCell<Rc<RefCell<Environment>>>,
-    locals: RefCell<HashMap<Rc<Expr>, usize>>
+    locals: RefCell<HashMap<Rc<Expr>, usize>>,
 }
 
 impl StmtVisitor<()> for Interpreter {
+    fn visit_class_stmt(&self, _: Rc<Stmt>, stmt: &ClassStmt) -> Result<(), LoxResult> {
+        self.environment.borrow().borrow_mut().define(&stmt.name.as_string(), Object::Nil);
+
+        let klass = Object::Class(LoxClass::new(&stmt.name.as_string()));
+        self.environment.borrow().borrow_mut().assign(&stmt.name, klass)?;
+        Ok(())
+    }
+
     fn visit_return_stmt(&self, _: Rc<Stmt>, stmt: &ReturnStmt) -> Result<(), LoxResult> {
         if let Some(value) = stmt.value.clone() {
             Err(LoxResult::return_value(self.evaluate(value)?))
@@ -27,6 +36,7 @@ impl StmtVisitor<()> for Interpreter {
             Err(LoxResult::return_value(Object::Nil))
         }
     }
+
     fn visit_function_stmt(&self, _: Rc<Stmt>, stmt: &FunctionStmt) -> Result<(), LoxResult> {
         let function = LoxFunction::new(stmt, self.environment.borrow().deref());
         self.environment.borrow().borrow_mut().define(
@@ -39,7 +49,7 @@ impl StmtVisitor<()> for Interpreter {
     }
 
     fn visit_break_stmt(&self, _: Rc<Stmt>, _stmt: &BreakStmt) -> Result<(), LoxResult> {
-            Err(LoxResult::Break)
+        Err(LoxResult::Break)
     }
     fn visit_while_stmt(&self, _: Rc<Stmt>, stmt: &WhileStmt) -> Result<(), LoxResult> {
         while self.is_truthy(&self.evaluate(stmt.condition.clone())?) {
@@ -139,12 +149,15 @@ impl ExprVisitor<Object> for Interpreter {
         let value = self.evaluate(expr.value.clone())?;
 
         if let Some(distance) = self.locals.borrow().get(&wrapper) {
-            self.environment
-            .borrow()
-            .borrow_mut()
-            .assign_at(*distance, &expr.name, value.clone())?;
+            self.environment.borrow().borrow_mut().assign_at(
+                *distance,
+                &expr.name,
+                value.clone(),
+            )?;
         } else {
-            self.globals.borrow_mut().assign(&expr.name, value.clone())?;
+            self.globals
+                .borrow_mut()
+                .assign(&expr.name, value.clone())?;
         }
 
         Ok(value)
@@ -231,7 +244,11 @@ impl ExprVisitor<Object> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, wrapper: Rc<Expr>, expr: &VariableExpr) -> Result<Object, LoxResult> {
+    fn visit_variable_expr(
+        &self,
+        wrapper: Rc<Expr>,
+        expr: &VariableExpr,
+    ) -> Result<Object, LoxResult> {
         //self.environment.borrow().borrow().get(&expr.name)
         self.look_up_variable(&expr.name, wrapper)
     }
@@ -250,11 +267,11 @@ impl Interpreter {
         Interpreter {
             globals: Rc::clone(&globals),
             environment: RefCell::new(Rc::clone(&globals)),
-            locals: RefCell::new(HashMap::new())
+            locals: RefCell::new(HashMap::new()),
         }
     }
     fn evaluate(&self, expr: Rc<Expr>) -> Result<Object, LoxResult> {
-        expr.accept(expr.clone(),self)
+        expr.accept(expr.clone(), self)
     }
 
     fn execute(&self, stmt: Rc<Stmt>) -> Result<(), LoxResult> {
@@ -298,17 +315,18 @@ impl Interpreter {
         println!("{:?}", self.environment);
     }
 
-    pub fn resolve(&self, expr: Rc<Expr>, depth: usize){
+    pub fn resolve(&self, expr: Rc<Expr>, depth: usize) {
         self.locals.borrow_mut().insert(expr, depth);
     }
 
-    fn look_up_variable(&self, name: &Token, expr: Rc<Expr>)->Result<Object, LoxResult>{
-        if let Some(distance) = self.locals.borrow().get(&expr){
-            self.environment.borrow().borrow().get_at(*distance, &name.as_string())
+    fn look_up_variable(&self, name: &Token, expr: Rc<Expr>) -> Result<Object, LoxResult> {
+        if let Some(distance) = self.locals.borrow().get(&expr) {
+            self.environment
+                .borrow()
+                .borrow()
+                .get_at(*distance, &name.as_string())
         } else {
             self.globals.borrow().get(name)
         }
     }
 }
-
-

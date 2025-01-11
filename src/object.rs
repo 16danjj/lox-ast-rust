@@ -1,6 +1,7 @@
 use crate::callable::*;
 use std::cmp::*;
 use std::fmt;
+use crate::lox_class::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -8,6 +9,7 @@ pub enum Object {
     Str(String),
     Bool(bool),
     Func(Callable),
+    Class(LoxClass),
     Nil,
     ArithmeticError,
 }
@@ -25,6 +27,7 @@ impl fmt::Display for Object {
                 }
             }
             Object::Func(_) => write!(f, "<func>"),
+            Object::Class(c) => write!(f, "<Class {}>", c.to_string()),
             Object::Nil => write!(f, "nil"),
             Object::ArithmeticError => panic!("Should not be trying to print this"),
         }

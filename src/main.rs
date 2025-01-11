@@ -21,6 +21,7 @@ use interpreter::*;
 use resolver::*;
 mod object;
 use std::rc::Rc;
+mod lox_class;
 
 pub fn main() {
     let args: Vec<String> = args().collect();
@@ -89,10 +90,9 @@ impl Lox {
             let resolver = Resolver::new(&self.interpreter);
             let s = Rc::new(statements);
             resolver.resolve(&Rc::clone(&s))?;
-            if resolver.success(){
+            if resolver.success() {
                 self.interpreter.interpret(&Rc::clone(&s));
             }
-            
         }
         Ok(())
     }

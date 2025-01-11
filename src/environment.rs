@@ -56,26 +56,37 @@ impl Environment {
         }
     }
 
-    pub fn get_at(&self, distance: usize, name: &str)-> Result<Object, LoxResult>{
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<Object, LoxResult> {
         if distance == 0 {
             Ok(self.values.get(name).unwrap().clone())
         } else {
-            self.enclosing.as_ref().unwrap().borrow().get_at(distance - 1, name)
+            self.enclosing
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .get_at(distance - 1, name)
         }
-        
     }
 
-    pub fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), LoxResult> {
+    pub fn assign_at(
+        &mut self,
+        distance: usize,
+        name: &Token,
+        value: Object,
+    ) -> Result<(), LoxResult> {
         if distance == 0 {
             self.values.insert(name.as_string(), value.clone());
             Ok(())
         } else {
-            self.enclosing.as_ref().unwrap().borrow_mut().assign_at(distance - 1, name, value)
+            self.enclosing
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .assign_at(distance - 1, name, value)
         }
-
     }
 
-    /* 
+    /*
     pub fn ancestor(&self, distance: usize) -> Rc<RefCell<Environment>>{
         let mut environment = self.enclosing.as_ref().unwrap().clone();
 
