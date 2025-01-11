@@ -122,7 +122,19 @@ impl ExprVisitor<Object> for Interpreter {
                     ),
                 ));
             }
-            function.func.call(self, arguments) // Check !
+            function.func.call(self, arguments)
+        } else if let Object::Class(klass) = callee {
+            if arguments.len() != klass.arity() {
+                return Err(LoxResult::runtime_error(
+                    &expr.paren,
+                    &format!(
+                        "Expected {} arguments but got {}.",
+                        klass.arity(),
+                        arguments.len()
+                    ),
+                ));
+            }
+            klass.call(self, arguments)
         } else {
             Err(LoxResult::runtime_error(
                 &expr.paren,
