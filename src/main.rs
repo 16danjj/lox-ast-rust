@@ -22,6 +22,7 @@ use resolver::*;
 mod object;
 use std::rc::Rc;
 mod lox_class;
+mod lox_instance;
 
 pub fn main() {
     let args: Vec<String> = args().collect();

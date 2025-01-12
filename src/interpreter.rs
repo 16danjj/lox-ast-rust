@@ -24,7 +24,7 @@ impl StmtVisitor<()> for Interpreter {
     fn visit_class_stmt(&self, _: Rc<Stmt>, stmt: &ClassStmt) -> Result<(), LoxResult> {
         self.environment.borrow().borrow_mut().define(&stmt.name.as_string(), Object::Nil);
 
-        let klass = Object::Class(LoxClass::new(&stmt.name.as_string()));
+        let klass = Object::Class(Rc::new(LoxClass::new(&stmt.name.as_string())));
         self.environment.borrow().borrow_mut().assign(&stmt.name, klass)?;
         Ok(())
     }
@@ -134,7 +134,8 @@ impl ExprVisitor<Object> for Interpreter {
                     ),
                 ));
             }
-            klass.call(self, arguments)
+            klass.instantiate(self, arguments, Rc::clone(&klass))
+            //klass.call(self, arguments)
         } else {
             Err(LoxResult::runtime_error(
                 &expr.paren,
