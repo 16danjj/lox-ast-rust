@@ -26,6 +26,12 @@ impl LoxFunction {
     }
 }
 
+impl std::string::ToString for LoxFunction {
+    fn to_string(&self) -> String {
+        format!("<Function {}>", self.name.as_string())
+    }
+}
+
 impl LoxCallable for LoxFunction {
     fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>) -> Result<Object, LoxResult> {
         let mut e = Environment::new_with_enclosing(Rc::clone(&self.closure));
@@ -43,9 +49,5 @@ impl LoxCallable for LoxFunction {
 
     fn arity(&self) -> usize {
         self.params.len()
-    }
-
-    fn to_string(&self) -> String {
-        self.name.as_string()
     }
 }

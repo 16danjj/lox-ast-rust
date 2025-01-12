@@ -22,10 +22,16 @@ pub struct Interpreter {
 
 impl StmtVisitor<()> for Interpreter {
     fn visit_class_stmt(&self, _: Rc<Stmt>, stmt: &ClassStmt) -> Result<(), LoxResult> {
-        self.environment.borrow().borrow_mut().define(&stmt.name.as_string(), Object::Nil);
+        self.environment
+            .borrow()
+            .borrow_mut()
+            .define(&stmt.name.as_string(), Object::Nil);
 
         let klass = Object::Class(Rc::new(LoxClass::new(&stmt.name.as_string())));
-        self.environment.borrow().borrow_mut().assign(&stmt.name, klass)?;
+        self.environment
+            .borrow()
+            .borrow_mut()
+            .assign(&stmt.name, klass)?;
         Ok(())
     }
 
@@ -104,6 +110,17 @@ impl StmtVisitor<()> for Interpreter {
 }
 
 impl ExprVisitor<Object> for Interpreter {
+    fn visit_get_expr(&self, _: Rc<Expr>, expr: &GetExpr) -> Result<Object, LoxResult> {
+        let object = self.evaluate(expr.object.clone())?;
+        if let Object::Instance(inst) = object {
+            Ok(inst.get(&expr.name)?)
+        } else {
+            Err(LoxResult::runtime_error(
+                &expr.name,
+                "Only instances have properties",
+            ))
+        }
+    }
     fn visit_call_expr(&self, _: Rc<Expr>, expr: &CallExpr) -> Result<Object, LoxResult> {
         let callee = self.evaluate(expr.callee.clone())?;
         let mut arguments = Vec::new();
@@ -135,7 +152,6 @@ impl ExprVisitor<Object> for Interpreter {
                 ));
             }
             klass.instantiate(self, arguments, Rc::clone(&klass))
-            //klass.call(self, arguments)
         } else {
             Err(LoxResult::runtime_error(
                 &expr.paren,

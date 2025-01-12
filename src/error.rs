@@ -38,7 +38,6 @@ impl LoxResult {
         err
     }
 
-    
     pub fn system_error(message: &str) -> LoxResult {
         let err = LoxResult::SystemError {
             message: message.to_string(),
