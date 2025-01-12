@@ -288,6 +288,8 @@ impl<'a> Parser<'a> {
                     name: expr.name.dup(),
                     value: Rc::new(value),
                 })));
+            } else if let Expr::Get(get) = expr {
+                return Ok(Expr::Set(Rc::new(SetExpr { object: Rc::clone(&get.object), name: get.name.dup(), value: Rc::new(value) })))
             } else {
                 self.error(&equals, "Invalid assignment target.");
             }

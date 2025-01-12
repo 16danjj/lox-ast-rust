@@ -12,7 +12,7 @@ pub enum Object {
     Bool(bool),
     Func(Callable),
     Class(Rc<LoxClass>),
-    Instance(LoxInstance),
+    Instance(Rc<LoxInstance>),
     Nil,
     ArithmeticError,
 }

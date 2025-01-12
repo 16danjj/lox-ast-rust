@@ -31,6 +31,10 @@ impl LoxInstance {
             ))
         }
     }
+
+    pub fn set(&self, name: &Token, value: Object){
+        self.fields.borrow_mut().insert(name.as_string(), value);
+    }
 }
 
 impl std::string::ToString for LoxInstance {

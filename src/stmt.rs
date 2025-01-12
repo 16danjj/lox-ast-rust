@@ -29,60 +29,35 @@ impl PartialEq for Stmt {
             (Stmt::Return(a), Stmt::Return(b)) => Rc::ptr_eq(a, b),
             (Stmt::Var(a), Stmt::Var(b)) => Rc::ptr_eq(a, b),
             (Stmt::While(a), Stmt::While(b)) => Rc::ptr_eq(a, b),
-            _ => false,
+              _ => false, 
         }
     }
 }
 
 impl Eq for Stmt {}
 
-use std::hash::{Hash, Hasher};
+use std::hash:: {Hash, Hasher};
 impl Hash for Stmt {
     fn hash<H>(&self, hasher: &mut H)
-    where
-        H: Hasher,
+    where H: Hasher,
     {
         match self {
-            Stmt::Block(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Class(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Break(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Expression(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Function(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::If(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Print(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Return(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::Var(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
-            Stmt::While(a) => {
-                hasher.write_usize(Rc::as_ptr(a) as usize);
-            }
+            Stmt::Block(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Class(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Break(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Expression(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Function(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::If(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Print(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Return(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::Var(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Stmt::While(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
         }
     }
 }
 
 impl Stmt {
-    pub fn accept<T>(
-        &self,
-        wrapper: Rc<Stmt>,
-        stmt_visitor: &dyn StmtVisitor<T>,
-    ) -> Result<T, LoxResult> {
+    pub fn accept<T>(&self, wrapper: Rc<Stmt>, stmt_visitor: &dyn StmtVisitor<T>) -> Result<T, LoxResult> {
         match self {
             Stmt::Block(v) => stmt_visitor.visit_block_stmt(wrapper, v),
             Stmt::Class(v) => stmt_visitor.visit_class_stmt(wrapper, v),
@@ -150,11 +125,7 @@ pub trait StmtVisitor<T> {
     fn visit_block_stmt(&self, wrapper: Rc<Stmt>, stmt: &BlockStmt) -> Result<T, LoxResult>;
     fn visit_class_stmt(&self, wrapper: Rc<Stmt>, stmt: &ClassStmt) -> Result<T, LoxResult>;
     fn visit_break_stmt(&self, wrapper: Rc<Stmt>, stmt: &BreakStmt) -> Result<T, LoxResult>;
-    fn visit_expression_stmt(
-        &self,
-        wrapper: Rc<Stmt>,
-        stmt: &ExpressionStmt,
-    ) -> Result<T, LoxResult>;
+    fn visit_expression_stmt(&self, wrapper: Rc<Stmt>, stmt: &ExpressionStmt) -> Result<T, LoxResult>;
     fn visit_function_stmt(&self, wrapper: Rc<Stmt>, stmt: &FunctionStmt) -> Result<T, LoxResult>;
     fn visit_if_stmt(&self, wrapper: Rc<Stmt>, stmt: &IfStmt) -> Result<T, LoxResult>;
     fn visit_print_stmt(&self, wrapper: Rc<Stmt>, stmt: &PrintStmt) -> Result<T, LoxResult>;
@@ -162,3 +133,4 @@ pub trait StmtVisitor<T> {
     fn visit_var_stmt(&self, wrapper: Rc<Stmt>, stmt: &VarStmt) -> Result<T, LoxResult>;
     fn visit_while_stmt(&self, wrapper: Rc<Stmt>, stmt: &WhileStmt) -> Result<T, LoxResult>;
 }
+

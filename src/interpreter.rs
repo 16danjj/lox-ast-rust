@@ -110,6 +110,17 @@ impl StmtVisitor<()> for Interpreter {
 }
 
 impl ExprVisitor<Object> for Interpreter {
+    fn visit_set_expr(&self, _: Rc<Expr>, expr: &SetExpr) -> Result<Object, LoxResult> {
+        let object = self.evaluate(expr.object.clone())?;
+        if let Object::Instance(inst) = object {
+            let value = self.evaluate(expr.value.clone())?;
+            inst.set(&expr.name, value.clone());
+            Ok(value)
+        } else {
+            Err(LoxResult::runtime_error(&expr.name, "Only instances have fields."))
+        }
+    }
+
     fn visit_get_expr(&self, _: Rc<Expr>, expr: &GetExpr) -> Result<Object, LoxResult> {
         let object = self.evaluate(expr.object.clone())?;
         if let Object::Instance(inst) = object {
@@ -121,6 +132,7 @@ impl ExprVisitor<Object> for Interpreter {
             ))
         }
     }
+
     fn visit_call_expr(&self, _: Rc<Expr>, expr: &CallExpr) -> Result<Object, LoxResult> {
         let callee = self.evaluate(expr.callee.clone())?;
         let mut arguments = Vec::new();
@@ -159,6 +171,7 @@ impl ExprVisitor<Object> for Interpreter {
             ))
         }
     }
+
     fn visit_logical_expr(&self, _: Rc<Expr>, expr: &LogicalExpr) -> Result<Object, LoxResult> {
         let left = self.evaluate(expr.left.clone())?;
 
@@ -174,6 +187,7 @@ impl ExprVisitor<Object> for Interpreter {
 
         self.evaluate(expr.right.clone())
     }
+
     fn visit_assign_expr(&self, wrapper: Rc<Expr>, expr: &AssignExpr) -> Result<Object, LoxResult> {
         let value = self.evaluate(expr.value.clone())?;
 
