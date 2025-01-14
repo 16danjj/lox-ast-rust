@@ -6,6 +6,7 @@ use crate::object::*;
 use crate::stmt::*;
 use crate::token::*;
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 pub struct LoxFunction {
@@ -26,9 +27,10 @@ impl LoxFunction {
     }
 }
 
-impl std::string::ToString for LoxFunction {
-    fn to_string(&self) -> String {
-        format!("<Function {}>", self.name.as_string())
+impl fmt::Display for LoxFunction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let paramlist = self.params.iter().map(|p| p.as_string()).collect::<Vec<String>>().join(", ");
+        write!(f, "<Function {}({})>", self.name.as_string(), paramlist)
     }
 }
 

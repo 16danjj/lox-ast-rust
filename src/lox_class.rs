@@ -1,3 +1,4 @@
+use std::fmt;
 use std::rc::Rc;
 
 use crate::callable::*;
@@ -30,14 +31,15 @@ impl LoxClass {
         Ok(Object::Instance(Rc::new(LoxInstance::new(klass))))
     }
 
-    pub fn find_method(&self, name: &String) -> Option<Object> {
+    pub fn find_method(&self, name: &str) -> Option<Object> {
         self.methods.get(name).cloned()
     }
 }
 
-impl std::string::ToString for LoxClass {
-    fn to_string(&self) -> String {
-        self.name.clone()
+impl fmt::Display for LoxClass {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let methods = self.methods.keys().cloned().collect::<Vec<String>>().join(", ");
+        write!(f, "<Class {} {{ {methods} }}>", self.name)
     }
 }
 
