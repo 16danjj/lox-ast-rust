@@ -12,6 +12,7 @@ pub enum Expr {
     Literal(Rc<LiteralExpr>),
     Logical(Rc<LogicalExpr>),
     Set(Rc<SetExpr>),
+    This(Rc<ThisExpr>),
     Unary(Rc<UnaryExpr>),
     Variable(Rc<VariableExpr>),
 }
@@ -27,6 +28,7 @@ impl PartialEq for Expr {
             (Expr::Literal(a), Expr::Literal(b)) => Rc::ptr_eq(a, b),
             (Expr::Logical(a), Expr::Logical(b)) => Rc::ptr_eq(a, b),
             (Expr::Set(a), Expr::Set(b)) => Rc::ptr_eq(a, b),
+            (Expr::This(a), Expr::This(b)) => Rc::ptr_eq(a, b),
             (Expr::Unary(a), Expr::Unary(b)) => Rc::ptr_eq(a, b),
             (Expr::Variable(a), Expr::Variable(b)) => Rc::ptr_eq(a, b),
               _ => false, 
@@ -50,6 +52,7 @@ impl Hash for Expr {
             Expr::Literal(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
             Expr::Logical(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
             Expr::Set(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
+            Expr::This(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
             Expr::Unary(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
             Expr::Variable(a) => { hasher.write_usize(Rc::as_ptr(a) as usize); }
         }
@@ -67,6 +70,7 @@ impl Expr {
             Expr::Literal(v) => expr_visitor.visit_literal_expr(wrapper, v),
             Expr::Logical(v) => expr_visitor.visit_logical_expr(wrapper, v),
             Expr::Set(v) => expr_visitor.visit_set_expr(wrapper, v),
+            Expr::This(v) => expr_visitor.visit_this_expr(wrapper, v),
             Expr::Unary(v) => expr_visitor.visit_unary_expr(wrapper, v),
             Expr::Variable(v) => expr_visitor.visit_variable_expr(wrapper, v),
         }
@@ -115,6 +119,10 @@ pub struct SetExpr {
     pub value: Rc<Expr>,
 }
 
+pub struct ThisExpr {
+    pub keyword: Token,
+}
+
 pub struct UnaryExpr {
     pub operator: Token,
     pub right: Rc<Expr>,
@@ -133,6 +141,7 @@ pub trait ExprVisitor<T> {
     fn visit_literal_expr(&self, wrapper: Rc<Expr>, expr: &LiteralExpr) -> Result<T, LoxResult>;
     fn visit_logical_expr(&self, wrapper: Rc<Expr>, expr: &LogicalExpr) -> Result<T, LoxResult>;
     fn visit_set_expr(&self, wrapper: Rc<Expr>, expr: &SetExpr) -> Result<T, LoxResult>;
+    fn visit_this_expr(&self, wrapper: Rc<Expr>, expr: &ThisExpr) -> Result<T, LoxResult>;
     fn visit_unary_expr(&self, wrapper: Rc<Expr>, expr: &UnaryExpr) -> Result<T, LoxResult>;
     fn visit_variable_expr(&self, wrapper: Rc<Expr>, expr: &VariableExpr) -> Result<T, LoxResult>;
 }

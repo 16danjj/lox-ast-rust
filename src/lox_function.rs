@@ -1,5 +1,5 @@
 use crate::callable::*;
-use crate::environment::Environment;
+use crate::environment::*;
 use crate::error::*;
 use crate::interpreter::*;
 use crate::object::*;
@@ -9,11 +9,32 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+
 pub struct LoxFunction {
     name: Token,
     params: Rc<Vec<Token>>,
     body: Rc<Vec<Rc<Stmt>>>,
     closure: Rc<RefCell<Environment>>,
+}
+
+impl fmt::Debug for LoxFunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{}", self.to_string())
+    }
+}
+
+impl Clone for LoxFunction {
+    fn clone(&self) -> Self {
+        Self { name: self.name.dup(), params: Rc::clone(&self.params), body: Rc::clone(&self.body), closure: Rc::clone(&self.closure) }
+    }
+}
+impl PartialEq for LoxFunction {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.token_type() == other.name.token_type() && 
+        Rc::ptr_eq(&self.params, &other.params) &&
+        Rc::ptr_eq(&self.body, &other.body) &&
+        Rc::ptr_eq(&self.closure, &other.closure) 
+    }
 }
 
 impl LoxFunction {
@@ -24,6 +45,17 @@ impl LoxFunction {
             body: Rc::clone(&declaration.body),
             closure: Rc::clone(closure),
         }
+    }
+
+    pub fn bind(&self, instance: &Object) -> Object {
+        let environment = RefCell::new(Environment::new_with_enclosing(Rc::clone(&self.closure)));
+        environment.borrow_mut().define("this", instance.clone());
+        Object::Func(Rc::new(Self {
+            name: self.name.dup(),
+            params: Rc::clone(&self.params),
+            body: Rc::clone(&self.body),
+            closure: Rc::new(environment)
+        }))
     }
 }
 
