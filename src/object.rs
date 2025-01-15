@@ -1,6 +1,6 @@
 use crate::lox_class::*;
-use crate::lox_instance::*;
 use crate::lox_function::*;
+use crate::lox_instance::*;
 use std::cmp::*;
 use std::fmt;
 use std::rc::Rc;

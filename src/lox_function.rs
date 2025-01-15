@@ -9,9 +9,9 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-
 pub struct LoxFunction {
     name: Token,
+    is_initializer: bool,
     params: Rc<Vec<Token>>,
     body: Rc<Vec<Rc<Stmt>>>,
     closure: Rc<RefCell<Environment>>,
@@ -19,28 +19,39 @@ pub struct LoxFunction {
 
 impl fmt::Debug for LoxFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}", self.to_string())
+        write!(f, "{}", self.to_string())
     }
 }
 
 impl Clone for LoxFunction {
     fn clone(&self) -> Self {
-        Self { name: self.name.dup(), params: Rc::clone(&self.params), body: Rc::clone(&self.body), closure: Rc::clone(&self.closure) }
+        Self {
+            name: self.name.dup(),
+            is_initializer: self.is_initializer,
+            params: Rc::clone(&self.params),
+            body: Rc::clone(&self.body),
+            closure: Rc::clone(&self.closure),
+        }
     }
 }
 impl PartialEq for LoxFunction {
     fn eq(&self, other: &Self) -> bool {
-        self.name.token_type() == other.name.token_type() && 
-        Rc::ptr_eq(&self.params, &other.params) &&
-        Rc::ptr_eq(&self.body, &other.body) &&
-        Rc::ptr_eq(&self.closure, &other.closure) 
+        self.name.token_type() == other.name.token_type()
+            && Rc::ptr_eq(&self.params, &other.params)
+            && Rc::ptr_eq(&self.body, &other.body)
+            && Rc::ptr_eq(&self.closure, &other.closure)
     }
 }
 
 impl LoxFunction {
-    pub fn new(declaration: &FunctionStmt, closure: &Rc<RefCell<Environment>>) -> Self {
+    pub fn new(
+        declaration: &FunctionStmt,
+        closure: &Rc<RefCell<Environment>>,
+        is_initializer: bool,
+    ) -> Self {
         Self {
             name: declaration.name.dup(),
+            is_initializer,
             params: Rc::clone(&declaration.params),
             body: Rc::clone(&declaration.body),
             closure: Rc::clone(closure),
@@ -52,16 +63,22 @@ impl LoxFunction {
         environment.borrow_mut().define("this", instance.clone());
         Object::Func(Rc::new(Self {
             name: self.name.dup(),
+            is_initializer: self.is_initializer,
             params: Rc::clone(&self.params),
             body: Rc::clone(&self.body),
-            closure: Rc::new(environment)
+            closure: Rc::new(environment),
         }))
     }
 }
 
 impl fmt::Display for LoxFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let paramlist = self.params.iter().map(|p| p.as_string()).collect::<Vec<String>>().join(", ");
+        let paramlist = self
+            .params
+            .iter()
+            .map(|p| p.as_string())
+            .collect::<Vec<String>>()
+            .join(", ");
         write!(f, "<Function {}({})>", self.name.as_string(), paramlist)
     }
 }
@@ -75,9 +92,21 @@ impl LoxCallable for LoxFunction {
         }
 
         match interpreter.execute_block(&self.body, e) {
-            Err(LoxResult::ReturnValue { value }) => Ok(value),
+            Err(LoxResult::ReturnValue { value }) => {
+                if self.is_initializer {
+                    self.closure.borrow().get_at(0, "this")
+                } else {
+                    Ok(value)
+                }
+            }
             Err(e) => return Err(e),
-            Ok(_) => Ok(Object::Nil),
+            Ok(_) => {
+                if self.is_initializer {
+                    self.closure.borrow().get_at(0, "this")
+                } else {
+                    Ok(Object::Nil)
+                }
+            }
         }
     }
 

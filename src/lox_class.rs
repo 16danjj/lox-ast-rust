@@ -11,24 +11,30 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoxClass {
     name: String,
-    methods: HashMap<String, Object>
+    methods: HashMap<String, Object>,
 }
 
 impl LoxClass {
     pub fn new(name: &str, methods: HashMap<String, Object>) -> Self {
         Self {
             name: name.to_string(),
-            methods
+            methods,
         }
     }
 
     pub fn instantiate(
         &self,
-        _interpreter: &Interpreter,
-        _arguments: Vec<Object>,
+        interpreter: &Interpreter,
+        arguments: Vec<Object>,
         klass: Rc<LoxClass>,
     ) -> Result<Object, LoxResult> {
-        Ok(Object::Instance(Rc::new(LoxInstance::new(klass))))
+        let instance = Object::Instance(Rc::new(LoxInstance::new(klass)));
+        if let Some(Object::Func(initializer)) = self.find_method("init") {
+            if let Object::Func(init) = initializer.bind(&instance) {
+                init.call(interpreter, arguments)?;
+            }
+        }
+        Ok(instance)
     }
 
     pub fn find_method(&self, name: &str) -> Option<Object> {
@@ -38,7 +44,12 @@ impl LoxClass {
 
 impl fmt::Display for LoxClass {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let methods = self.methods.keys().cloned().collect::<Vec<String>>().join(", ");
+        let methods = self
+            .methods
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>()
+            .join(", ");
         write!(f, "<Class {} {{ {methods} }}>", self.name)
     }
 }
@@ -53,6 +64,10 @@ impl LoxCallable for LoxClass {
     }
 
     fn arity(&self) -> usize {
-        0
+        if let Some(Object::Func(initializer)) = self.find_method("init") {
+            initializer.arity()
+        } else {
+            0
+        }
     }
 }

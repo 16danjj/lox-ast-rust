@@ -31,12 +31,16 @@ impl StmtVisitor<()> for Interpreter {
         let mut methods = HashMap::new();
         for method in stmt.methods.deref() {
             if let Stmt::Function(func) = method.deref() {
-                let function = Object::Func(Rc::new(LoxFunction::new(func, &self.environment.borrow())));
+                let is_init = func.name.as_string() == "init";
+                let function = Object::Func(Rc::new(LoxFunction::new(
+                    func,
+                    &self.environment.borrow(),
+                    is_init,
+                )));
                 methods.insert(func.name.as_string(), function);
             } else {
                 panic!("Non-function method in class");
             }
-            
         }
         let klass = Object::Class(Rc::new(LoxClass::new(&stmt.name.as_string(), methods)));
         self.environment
@@ -55,8 +59,11 @@ impl StmtVisitor<()> for Interpreter {
     }
 
     fn visit_function_stmt(&self, _: Rc<Stmt>, stmt: &FunctionStmt) -> Result<(), LoxResult> {
-        let function = LoxFunction::new(stmt, self.environment.borrow().deref());
-        self.environment.borrow().borrow_mut().define(&stmt.name.as_string(),Object::Func(Rc::new(function)));
+        let function = LoxFunction::new(stmt, self.environment.borrow().deref(), false);
+        self.environment
+            .borrow()
+            .borrow_mut()
+            .define(&stmt.name.as_string(), Object::Func(Rc::new(function)));
         Ok(())
     }
 
@@ -127,7 +134,10 @@ impl ExprVisitor<Object> for Interpreter {
             inst.set(&expr.name, value.clone());
             Ok(value)
         } else {
-            Err(LoxResult::runtime_error(&expr.name, "Only instances have fields."))
+            Err(LoxResult::runtime_error(
+                &expr.name,
+                "Only instances have fields.",
+            ))
         }
     }
 
@@ -150,7 +160,7 @@ impl ExprVisitor<Object> for Interpreter {
             arguments.push(self.evaluate(argument.clone())?);
         }
 
-        /* 
+        /*
         let call_func: Option<Rc<dyn LoxCallable>> = match callee {
             Object::Func(f) => Some(f),
             Object::Class(c) => Some(c),
