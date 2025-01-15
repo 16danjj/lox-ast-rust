@@ -5,8 +5,9 @@ use crate::LoxResult;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::fmt;
 use std::rc::Rc;
+use std::fmt;
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoxInstance {
@@ -25,9 +26,9 @@ impl LoxInstance {
     pub fn get(&self, name: &Token, this: &Rc<LoxInstance>) -> Result<Object, LoxResult> {
         if let Entry::Occupied(o) = self.fields.borrow_mut().entry(name.as_string()) {
             Ok(o.get().clone())
-        } else if let Some(method) = self.klass.find_method(&name.as_string()) {
+        } else if let Some(method) = self.klass.find_method(&name.as_string()){
             if let Object::Func(func) = method {
-                return Ok(func.bind(&Object::Instance(Rc::clone(&this))));
+                Ok(func.bind(&Object::Instance(Rc::clone(&this))))
             } else {
                 panic!("tried to bind 'this' to a non-function {method:?}");
             }
@@ -39,22 +40,18 @@ impl LoxInstance {
         }
     }
 
-    pub fn set(&self, name: &Token, value: Object) {
+    pub fn set(&self, name: &Token, value: Object){
         self.fields.borrow_mut().insert(name.as_string(), value);
     }
+
 }
 
 impl fmt::Display for LoxInstance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut fields = Vec::new();
-        for (k, v) in self.fields.borrow().iter() {
+        for (k,v) in self.fields.borrow().iter(){
             fields.push(format!("{k}={v}"));
         }
-        write!(
-            f,
-            "<Instance of {} {{ {} }}>",
-            self.klass.to_string(),
-            fields.join(", ")
-        )
+        write!(f, "<Instance of {} {{ {} }}>", self.klass, fields.join(", "))
     }
 }
