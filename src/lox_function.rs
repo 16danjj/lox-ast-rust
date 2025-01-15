@@ -5,6 +5,7 @@ use crate::interpreter::*;
 use crate::object::*;
 use crate::stmt::*;
 use crate::token::*;
+use crate::lox_class::*;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
@@ -43,6 +44,18 @@ impl PartialEq for LoxFunction {
     }
 }
 
+impl fmt::Display for LoxFunction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let paramlist = self
+            .params
+            .iter()
+            .map(|p| p.as_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "<Function {}({})>", self.name.as_string(), paramlist)
+    }
+}
+
 impl LoxFunction {
     pub fn new(
         declaration: &FunctionStmt,
@@ -71,20 +84,9 @@ impl LoxFunction {
     }
 }
 
-impl fmt::Display for LoxFunction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let paramlist = self
-            .params
-            .iter()
-            .map(|p| p.as_string())
-            .collect::<Vec<String>>()
-            .join(", ");
-        write!(f, "<Function {}({})>", self.name.as_string(), paramlist)
-    }
-}
 
 impl LoxCallable for LoxFunction {
-    fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>) -> Result<Object, LoxResult> {
+    fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>, _klass: Option<Rc<LoxClass>>) -> Result<Object, LoxResult> {
         let mut e = Environment::new_with_enclosing(Rc::clone(&self.closure));
 
         for (param, arg) in self.params.iter().zip(arguments.iter()) {

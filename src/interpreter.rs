@@ -4,7 +4,7 @@ use crate::error::*;
 use crate::expr::*;
 use crate::lox_class::*;
 use crate::lox_function::*;
-//use crate::native_functions::*;
+use crate::native_functions::*;
 use crate::object::*;
 use crate::stmt::*;
 use crate::token::*;
@@ -160,37 +160,28 @@ impl ExprVisitor<Object> for Interpreter {
             arguments.push(self.evaluate(argument.clone())?);
         }
 
-        /*
-        let call_func: Option<Rc<dyn LoxCallable>> = match callee {
-            Object::Func(f) => Some(f),
-            Object::Class(c) => Some(c),
-            _ => None
-        };*/
-
-        if let Object::Func(function) = callee {
-            if arguments.len() != function.arity() {
+        let (call_func, klass): (Option<Rc<dyn LoxCallable>>, Option<Rc<LoxClass>>) = match callee {
+            Object::Func(f) => (Some(f), None),
+            Object::Class(c) => {
+                let klass = Rc::clone(&c);
+                (Some(c), Some(klass))
+            },
+            Object::Native(n) => (Some(n), None),
+            _ => (None, None)
+        };
+        
+        if let Some(func) = call_func {
+            if arguments.len() != func.arity() {
                 return Err(LoxResult::runtime_error(
                     &expr.paren,
                     &format!(
                         "Expected {} arguments but got {}.",
-                        function.arity(),
+                        func.arity(),
                         arguments.len()
                     ),
                 ));
             }
-            function.call(self, arguments)
-        } else if let Object::Class(klass) = callee {
-            if arguments.len() != klass.arity() {
-                return Err(LoxResult::runtime_error(
-                    &expr.paren,
-                    &format!(
-                        "Expected {} arguments but got {}.",
-                        klass.arity(),
-                        arguments.len()
-                    ),
-                ));
-            }
-            klass.instantiate(self, arguments, Rc::clone(&klass))
+            func.call(self, arguments, klass)
         } else {
             Err(LoxResult::runtime_error(
                 &expr.paren,
@@ -327,10 +318,10 @@ impl ExprVisitor<Object> for Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         let globals = Rc::new(RefCell::new(Environment::new()));
-        /*
+        
         globals.borrow_mut().define(
             "clock",
-            Object::Func(Rc::new(NativeClock {}))); */
+            Object::Native(Rc::new(NativeClock {})));
 
         Interpreter {
             globals: Rc::clone(&globals),
