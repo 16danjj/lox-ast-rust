@@ -1,7 +1,7 @@
 use crate::interpreter::*;
+use crate::lox_class::*;
 use crate::object::*;
 use crate::LoxResult;
-use crate::lox_class::*;
 use std::fmt::{self, Debug, Display};
 use std::rc::Rc;
 
@@ -29,6 +29,11 @@ impl Display for Callable {
 }
 
 pub trait LoxCallable {
-    fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>, klass: Option<Rc<LoxClass>>) -> Result<Object, LoxResult>;
+    fn call(
+        &self,
+        interpreter: &Interpreter,
+        arguments: Vec<Object>,
+        klass: Option<Rc<LoxClass>>,
+    ) -> Result<Object, LoxResult>;
     fn arity(&self) -> usize;
 }

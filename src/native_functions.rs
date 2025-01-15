@@ -1,15 +1,15 @@
 use crate::callable::*;
 use crate::error::*;
 use crate::interpreter::*;
-use crate::object::*;
 use crate::lox_class::*;
+use crate::object::*;
+use std::fmt;
 use std::rc::Rc;
 use std::time::SystemTime;
-use std::fmt;
 pub struct NativeClock;
 
 impl fmt::Display for NativeClock {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { 
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<NativeClock>")
     }
 }
@@ -31,13 +31,12 @@ impl PartialEq for NativeClock {
     }
 }
 
-
 impl LoxCallable for NativeClock {
     fn call(
         &self,
         _interpreter: &Interpreter,
         _arguments: Vec<Object>,
-        _klass: Option<Rc<LoxClass>>
+        _klass: Option<Rc<LoxClass>>,
     ) -> Result<Object, LoxResult> {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => return Ok(Object::Num(n.as_millis() as f64)),

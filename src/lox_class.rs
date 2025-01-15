@@ -12,13 +12,15 @@ use std::collections::HashMap;
 pub struct LoxClass {
     name: String,
     methods: HashMap<String, Object>,
+    superclass: Option<Rc<LoxClass>>,
 }
 
 impl LoxClass {
-    pub fn new(name: &str, methods: HashMap<String, Object>) -> Self {
+    pub fn new(name: &str, superclass: Option<Rc<LoxClass>>, methods: HashMap<String, Object>) -> Self {
         Self {
             name: name.to_string(),
             methods,
+            superclass
         }
     }
 
@@ -59,7 +61,7 @@ impl LoxCallable for LoxClass {
         &self,
         interpreter: &Interpreter,
         arguments: Vec<Object>,
-        klass: Option<Rc<LoxClass>>
+        klass: Option<Rc<LoxClass>>,
     ) -> Result<Object, LoxResult> {
         self.instantiate(interpreter, arguments, klass.unwrap())
     }

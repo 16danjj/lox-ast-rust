@@ -23,6 +23,23 @@ pub struct Interpreter {
 
 impl StmtVisitor<()> for Interpreter {
     fn visit_class_stmt(&self, _: Rc<Stmt>, stmt: &ClassStmt) -> Result<(), LoxResult> {
+        let superclass = if let Some(superclass_expr) = &stmt.superclass {
+            let superclass = self.evaluate(superclass_expr.clone())?;
+
+            if let Object::Class(c) = superclass {
+                Some(c)
+            } else if let Expr::Variable(v) = superclass_expr.deref() {
+                return Err(LoxResult::runtime_error(
+                    &v.name,
+                    "Superclass must be a class",
+                ));
+            } else {
+                panic!("Could not extract variable expr.");
+            }
+        } else {
+            None
+        };
+
         self.environment
             .borrow()
             .borrow_mut()
@@ -42,7 +59,7 @@ impl StmtVisitor<()> for Interpreter {
                 panic!("Non-function method in class");
             }
         }
-        let klass = Object::Class(Rc::new(LoxClass::new(&stmt.name.as_string(), methods)));
+        let klass = Object::Class(Rc::new(LoxClass::new(&stmt.name.as_string(), superclass, methods)));
         self.environment
             .borrow()
             .borrow_mut()
@@ -165,11 +182,11 @@ impl ExprVisitor<Object> for Interpreter {
             Object::Class(c) => {
                 let klass = Rc::clone(&c);
                 (Some(c), Some(klass))
-            },
+            }
             Object::Native(n) => (Some(n), None),
-            _ => (None, None)
+            _ => (None, None),
         };
-        
+
         if let Some(func) = call_func {
             if arguments.len() != func.arity() {
                 return Err(LoxResult::runtime_error(
@@ -318,10 +335,10 @@ impl ExprVisitor<Object> for Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         let globals = Rc::new(RefCell::new(Environment::new()));
-        
-        globals.borrow_mut().define(
-            "clock",
-            Object::Native(Rc::new(NativeClock {})));
+
+        globals
+            .borrow_mut()
+            .define("clock", Object::Native(Rc::new(NativeClock {})));
 
         Interpreter {
             globals: Rc::clone(&globals),
