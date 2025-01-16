@@ -16,11 +16,15 @@ pub struct LoxClass {
 }
 
 impl LoxClass {
-    pub fn new(name: &str, superclass: Option<Rc<LoxClass>>, methods: HashMap<String, Object>) -> Self {
+    pub fn new(
+        name: &str,
+        superclass: Option<Rc<LoxClass>>,
+        methods: HashMap<String, Object>,
+    ) -> Self {
         Self {
             name: name.to_string(),
             methods,
-            superclass
+            superclass,
         }
     }
 
@@ -40,7 +44,13 @@ impl LoxClass {
     }
 
     pub fn find_method(&self, name: &str) -> Option<Object> {
-        self.methods.get(name).cloned()
+        if let Some(method) = self.methods.get(name) {
+            Some(method.clone())
+        } else if let Some(superclass) = &self.superclass {
+            superclass.find_method(name)
+        } else {
+            None
+        }
     }
 }
 
